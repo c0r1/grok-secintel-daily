@@ -1,0 +1,17 @@
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.*
+
+# Keep the real prompt local / in CI secrets, not in repo
+prompt_template.txt
+prompt_template.txt.*
+
+# Local validation artifacts
+validation-*/
+
+# Local-only verification helper (do not publish)
+verify_optimization.sh

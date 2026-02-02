@@ -1,0 +1,288 @@
+# .github/workflows/daily-report.yml
+
+name: Daily Report Generator
+
+on:
+  # 定时触发：每天北京时间 09:07（UTC 01:07）
+  schedule:
+    - cron: '7 1 * * *'
+  
+  # 手动触发（调试用）
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '设置为 1 启用 DRY_RUN（只校验环境和文件系统，不提交）'
+        required: false
+        default: '0'
+
+# 需要写权限才能 push 回仓库
+permissions:
+  contents: write
+  issues: write
+
+# 避免同一分支并发运行导致 push 冲突
+concurrency:
+  group: daily-report-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    env:
+      # schedule 事件没有 inputs，统一用 event_name 做兜底
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run || '0' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Materialize prompt template (from secret)
+        env:
+          PROMPT_TEMPLATE_B64: ${{ secrets.PROMPT_TEMPLATE_B64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROMPT_TEMPLATE_B64:-}" ]; then
+            echo "❌ Missing secret: PROMPT_TEMPLATE_B64" >&2
+            exit 1
+          fi
+          printf '%s' "$PROMPT_TEMPLATE_B64" | base64 -d > prompt_template.txt
+      
+      - name: Run grok script
+        id: run_script
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          XAI_BASE_URL: ${{ secrets.XAI_BASE_URL }}
+        run: |
+          set -euo pipefail
+          # Workflow 级兜底：脚本内部已有请求级重试；这里额外对整次运行做有限重试，覆盖网络抖动/偶发超时。
+          for attempt in 1 2 3; do
+            echo "Run attempt $attempt/3..."
+            if python grok.py; then
+              echo "Run ok."
+              exit 0
+            fi
+            echo "Run failed; retry in $((attempt * 10))s..."
+            sleep $((attempt * 10))
+          done
+          echo "Run failed after retries."
+          exit 1
+        # 脚本会自动输出 report_date 和 output_path 到 GITHUB_OUTPUT
+      
+      - name: Commit and push output
+        if: env.DRY_RUN != '1'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add outputs/ LATEST.md
+          # 使用脚本输出的日期，确保与文件名一致
+          if git diff --staged --quiet; then
+            echo "No output changes; skip commit."
+            exit 0
+          fi
+
+          git commit -m "📝 Daily report ${{ steps.run_script.outputs.report_date }}"
+
+          # Push 可能因远端分支前进而失败（非 fast-forward），做有限重试：fetch+rebase+push
+          for attempt in 1 2 3; do
+            echo "Push attempt $attempt/3..."
+            git fetch origin "${{ github.ref_name }}"
+            git rebase "origin/${{ github.ref_name }}"
+            if git push origin HEAD:"${{ github.ref_name }}"; then
+              echo "Push ok."
+              exit 0
+            fi
+            echo "Push failed; retry in $((attempt * 5))s..."
+            sleep $((attempt * 5))
+          done
+
+          echo "Push failed after retries."
+          exit 1
+
+      - name: Notify via GitHub issue comment
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require("fs");
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const dryRun = (process.env.DRY_RUN || "0") === "1";
+
+            const reportDate = `${{ steps.run_script.outputs.report_date }}`;
+            const outputPath = `${{ steps.run_script.outputs.output_path }}`;
+            const branch = `${{ github.ref_name }}`;
+
+            const yyyyMm = reportDate.slice(0, 7); // YYYY-MM
+            const title = `Daily Report ${yyyyMm}`;
+            const marker = "<!-- daily-report-automation -->";
+
+            const repoUrl = `https://github.com/${owner}/${repo}`;
+            const latestUrl = `${repoUrl}/blob/${branch}/LATEST.md`;
+            const reportUrl = `${repoUrl}/blob/${branch}/${outputPath}`;
+            const linkNote = dryRun ? "（DRY_RUN 不提交，链接可能未更新）" : "";
+
+            let latestContent = "";
+            try {
+              latestContent = fs.readFileSync("LATEST.md", "utf8").trimEnd();
+            } catch (e) {
+              latestContent = "(ERROR: failed to read LATEST.md from workspace)";
+            }
+
+            // Keep emails readable; GitHub comments allow up to 65536 chars.
+            const MAX_CHARS = 20000;
+            if (latestContent.length > MAX_CHARS) {
+              latestContent =
+                latestContent.slice(0, MAX_CHARS) +
+                "\n\n...(truncated for email, see links above)";
+            }
+
+            const comment = [
+              `📌 ${dryRun ? "[DRY_RUN] " : ""}${reportDate} 日报已生成`,
+              ``,
+              `- 最新：<${latestUrl}>${linkNote ? ` ${linkNote}` : ""}`,
+              `- 当日文件：<${reportUrl}>${linkNote ? ` ${linkNote}` : ""}`,
+              ``,
+              `---`,
+              ``,
+              latestContent,
+            ].join("\n");
+
+            async function lockIssue(issueNumber) {
+              try {
+                await github.rest.issues.lock({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  lock_reason: "resolved",
+                });
+              } catch (e) {
+                core.warning(`Failed to lock issue #${issueNumber}: ${e.message || e}`);
+              }
+            }
+
+            async function unlockIssue(issueNumber) {
+              try {
+                await github.rest.issues.unlock({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                });
+              } catch (e) {
+                // It's fine if the issue is already unlocked.
+                core.warning(`Failed to unlock issue #${issueNumber}: ${e.message || e}`);
+              }
+            }
+
+            async function closeIssue(issueNumber) {
+              try {
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  state: "closed",
+                });
+              } catch (e) {
+                core.warning(`Failed to close issue #${issueNumber}: ${e.message || e}`);
+              }
+            }
+
+            async function findOpenIssuesByExactTitle(exactTitle) {
+              // Prefer listForRepo + pagination: Search API can be eventually consistent and may miss newly created issues.
+              const all = await github.paginate(
+                github.rest.issues.listForRepo,
+                { owner, repo, state: "open", per_page: 100 },
+              );
+              return all
+                .filter((i) => !i.pull_request)
+                .filter((i) => i.title === exactTitle);
+            }
+
+            const matches = await findOpenIssuesByExactTitle(title);
+
+            // Canonical issue selection:
+            // Only trust issues created by github-actions[bot]. If absent, create a fresh one and close any pre-created duplicates.
+            const botIssues = matches.filter((i) => i.user && i.user.login === "github-actions[bot]");
+
+            let canonical = null;
+            const byNumberAsc = (a, b) => a.number - b.number;
+            if (botIssues.length > 0) {
+              canonical = botIssues.sort(byNumberAsc)[0];
+            } else {
+              canonical = (
+                await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title,
+                  body: `${marker}`,
+                })
+              ).data;
+            }
+
+            // Close duplicates (same month/title) to prevent ambiguity.
+            for (const issue of matches) {
+              if (issue.number === canonical.number) continue;
+              await lockIssue(issue.number);
+              await closeIssue(issue.number);
+            }
+
+            // Keep the issue locked to prevent external noise. If it is locked, temporarily unlock to post the comment.
+            const shouldBeLocked = true;
+            const wasLocked = Boolean(canonical.locked);
+
+            if (wasLocked) {
+              await unlockIssue(canonical.number);
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: canonical.number,
+              body: comment,
+            });
+
+            if (shouldBeLocked) {
+              await lockIssue(canonical.number);
+            }
+
+            if (!dryRun) {
+              // Pure monthly mode: close & lock any legacy "Daily Report" issue to avoid confusion/noise.
+              const legacyTitle = "Daily Report";
+              const legacyMatches = await findOpenIssuesByExactTitle(legacyTitle);
+              for (const legacy of legacyMatches) {
+                await lockIssue(legacy.number);
+                await closeIssue(legacy.number);
+              }
+            }
+
+            if (!dryRun) {
+              // Monthly rotation: on the first day of a month, close the previous month's issue (if it exists).
+              const day = reportDate.slice(8, 10);
+              if (day === "01") {
+                const year = Number(yyyyMm.slice(0, 4));
+                const month = Number(yyyyMm.slice(5, 7));
+                let prevYear = year;
+                let prevMonth = month - 1;
+                if (prevMonth === 0) {
+                  prevMonth = 12;
+                  prevYear = year - 1;
+                }
+                const prevTitle = `Daily Report ${prevYear}-${String(prevMonth).padStart(2, "0")}`;
+                const prevMatches = await findOpenIssuesByExactTitle(prevTitle);
+                for (const prev of prevMatches) {
+                  await lockIssue(prev.number);
+                  await closeIssue(prev.number);
+                }
+              }
+            }
