@@ -23,7 +23,7 @@ except ModuleNotFoundError:
     OpenAI = None  # type: ignore[assignment]
 
 # --- 常量配置 ---
-FAST_MODEL = "grok-4-fast"
+FAST_MODEL = "grok-4.1-fast"
 THINKING_MODEL = "grok-4.1-thinking"
 TEMPERATURES = [0.1, 0.6, 1.0]
 THINKING_TEMPERATURE = 0.1
