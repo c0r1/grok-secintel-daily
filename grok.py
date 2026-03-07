@@ -8,10 +8,11 @@
 
 from __future__ import annotations
 
+import json
 import os
+import random
 import re
 import sys
-import random
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -36,7 +37,6 @@ PROMPT_TEMPLATE_FILE = "prompt_template.txt"
 OUTPUT_DIR = "outputs"
 LATEST_REPORT_FILE = "LATEST.md"
 TIMEZONE = "Asia/Shanghai"
-
 # --- 汇总 Prompt 模板 ---
 SUMMARY_PROMPT_TEMPLATE = """你是一个专业的网络安全情报审查和整合专家。
 
@@ -47,7 +47,7 @@ SUMMARY_PROMPT_TEMPLATE = """你是一个专业的网络安全情报审查和整
 
 【整合规则】
 1. **按板块逐一处理**: 依次处理每个板块（最高赏金、云安全重点、Writeup、热议话题等）
-2. **情报去重与合并**: 
+2. **情报去重与合并**:
    - 若多份内容提及同一情报（相同漏洞/相同推文），合并为一条
    - 保留信息最完整、描述最准确的版本
    - 互动数据（点赞/转发/浏览）取各份中的最大值
@@ -89,8 +89,8 @@ def log(message: str) -> None:
 
 
 def load_env_config() -> tuple[str, str]:
-    api_key = os.environ.get("XAI_API_KEY")
-    base_url = os.environ.get("XAI_BASE_URL")
+    api_key = os.environ.get("XAI_API_KEY", "")
+    base_url = os.environ.get("XAI_BASE_URL", "")
 
     if not api_key:
         log("ERROR: 环境变量 XAI_API_KEY 未设置")
@@ -100,6 +100,19 @@ def load_env_config() -> tuple[str, str]:
         sys.exit(1)
 
     return api_key, base_url
+
+
+def sanitize_model_output(content: str) -> str:
+    cleaned = re.sub(
+        r"<think\b[^>]*>.*?(?:</think>|$)",
+        "",
+        content,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+    cleaned = re.sub(
+        r"^\s*\[Agent\s+\d+\]\[AgentThink\].*$", "", cleaned, flags=re.MULTILINE
+    )
+    return cleaned.strip()
 
 
 def load_prompt_template(filepath: str, now: datetime) -> str:
@@ -124,6 +137,55 @@ def load_prompt_template(filepath: str, now: datetime) -> str:
     return prompt
 
 
+def extract_response_content(response: object) -> str | None:
+    if isinstance(response, str):
+        parts = []
+        saw_sse_data = False
+        for line in response.splitlines():
+            line = line.strip()
+            if not line or line.startswith(":"):
+                continue
+            if not line.startswith("data:"):
+                continue
+            saw_sse_data = True
+            payload = line[5:].strip()
+            if payload == "[DONE]":
+                break
+            try:
+                data = json.loads(payload)
+            except Exception:
+                continue
+            if not isinstance(data, dict):
+                continue
+            choices = data.get("choices")
+            if not isinstance(choices, list) or not choices:
+                continue
+            first = choices[0]
+            if not isinstance(first, dict):
+                continue
+            delta = first.get("delta")
+            if isinstance(delta, dict):
+                piece = delta.get("content")
+                if isinstance(piece, str):
+                    parts.append(piece)
+                    continue
+            message = first.get("message")
+            if isinstance(message, dict):
+                piece = message.get("content")
+                if isinstance(piece, str):
+                    parts.append(piece)
+
+        if saw_sse_data:
+            content = sanitize_model_output("".join(parts))
+            return content or None
+        return None
+
+    content = response.choices[0].message.content
+    if isinstance(content, str):
+        return sanitize_model_output(content)
+    return None
+
+
 def call_with_retry(
     client: OpenAI,
     model: str,
@@ -146,10 +208,11 @@ def call_with_retry(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
+                stream=False,
             )
             elapsed = time.time() - start_time
 
-            content = response.choices[0].message.content
+            content = extract_response_content(response)
             if content:
                 content = content.strip()
                 log(f"   {label} ok ({elapsed:.1f}s, {len(content)} chars)")
@@ -231,6 +294,7 @@ def save_to_file(content: str, now: datetime) -> str:
     log(f"\n保存文件: {filepath}")
     return str(filepath)
 
+
 def save_latest(content: str) -> str:
     """保存最新报告到仓库根目录，便于直接查看。"""
     filepath = Path(LATEST_REPORT_FILE)
@@ -287,7 +351,10 @@ def main() -> None:
         client = OpenAI(
             api_key=api_key,
             base_url=base_url,
-            timeout=API_TIMEOUT,  # timeout 设置在 client 级别
+            timeout=API_TIMEOUT,
+            default_headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
+            },
         )
 
     # 2. 加载 prompt 模板（传入统一的时间点）
@@ -334,6 +401,7 @@ def main() -> None:
 
     # 6. 保存到本地文件（传入统一的时间点）
     log("\n写入输出文件...")
+    final_content = sanitize_model_output(final_content)
     final_content = inject_generated_time(final_content, now)
     output_path = save_to_file(final_content, now)
     log(f"   ok: {output_path}")
