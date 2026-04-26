@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Grok 网络安全情报生成脚本。
 
-- 串行调用 fast 多次生成草稿，再由 thinking 汇总为最终报告
+- 串行调用 fast 多次生成草稿，再由 fast 汇总为最终报告
 - 输出路径：outputs/YYYY/MM/YYYY-MM-DD.md（按 Asia/Shanghai）
 - DRY_RUN=1：不调用 API，仅验证模板填充与写文件
 """
@@ -25,7 +25,7 @@ except ModuleNotFoundError:
 
 # --- 常量配置 ---
 FAST_MODEL = "grok-4.20-fast"
-THINKING_MODEL = "grok-4.20-expert"
+THINKING_MODEL = FAST_MODEL
 TEMPERATURES = [0.1, 0.6, 1.0]
 THINKING_TEMPERATURE = 0.1
 API_TIMEOUT = 300.0  # 秒
@@ -250,13 +250,11 @@ def call_thinking_model(
     client: OpenAI,
     contents: list[str],
 ) -> str | None:
-    """调用 thinking 模型汇总审查。"""
+    """调用汇总模型审查。"""
     log(f"\n调用 {THINKING_MODEL} 汇总")
 
-    # 构建汇总 prompt，对每份内容做长度截断避免上下文过长
     contents_text = ""
     for i, content in enumerate(contents, 1):
-        # 截断过长内容
         if len(content) > MAX_CONTENT_LENGTH:
             content = content[:MAX_CONTENT_LENGTH] + "\n\n[内容已截断...]"
             log(f"   WARN: 第 {i} 份内容超过 {MAX_CONTENT_LENGTH} 字符，已截断")

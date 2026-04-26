@@ -80,6 +80,20 @@ class CallWithRetryTests(unittest.TestCase):
     def test_strips_unterminated_think_block(self):
         self.assertEqual(grok.sanitize_model_output('<think>\n内部推理'), '')
 
+    def test_call_thinking_model_uses_single_summary_prompt(self):
+        contents = ['draft-1', 'draft-2', 'draft-3']
+
+        with mock.patch.object(grok, 'call_with_retry', return_value='summary-1') as retry_call, \
+             mock.patch.object(grok, 'log'):
+            result = grok.call_thinking_model(mock.Mock(), contents)
+
+        self.assertEqual(result, 'summary-1')
+        retry_call.assert_called_once()
+        prompt = retry_call.call_args.args[2]
+        self.assertIn('【第 1 份内容】\ndraft-1', prompt)
+        self.assertIn('【第 2 份内容】\ndraft-2', prompt)
+        self.assertIn('【第 3 份内容】\ndraft-3', prompt)
+
 
 if __name__ == '__main__':
     unittest.main()
