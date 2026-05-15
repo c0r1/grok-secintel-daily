@@ -221,6 +221,11 @@ def call_with_retry(
                 log(f"   {label} empty response")
 
         except Exception as e:
+            err_str = str(e)
+            # 不可恢复的 429：账户无权限，跳过重试
+            if "No available accounts" in err_str or "model tier" in err_str:
+                log(f"   {label} FATAL: 账户无此模型权限，跳过重试 — {e}")
+                return None
             if attempt == MAX_RETRIES:
                 log(f"   {label} ERROR (final): {e}")
             else:
