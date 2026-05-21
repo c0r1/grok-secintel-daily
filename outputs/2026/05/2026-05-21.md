@@ -1,10 +1,10 @@
 **【CyberSec 情报速报 | 云安全 & AI 重点强化】**  
 
-> 生成时间: 2026-05-21 11:21:29 UTC+08:00
+> 生成时间: 2026-05-21 13:18:36 UTC+08:00
 
 **统计范围**: 2026-05-18 - 2026-05-21（包含起止日，共约 3-4 天数据）  
-**本期热度峰值**: 最高 👍 476 | 最高 👀 186k+  
-**今日情报眼**: GitHub内部仓库遭VS Code恶意扩展入侵，IDE供应链风险凸显开发者环境威胁。 [[1]](https://x.com/Frichette_n/status/2057124497635873081)
+**本期热度峰值**: 最高 👍 221 | 最高 👀 13k+  
+**今日情报眼**: GitHub内部仓库遭VS Code扩展入侵，Verizon DBIR漏洞利用成首要访问方式。 [[1]](https://x.com/Bugcrowd/status/2057213387528962431) [[2]](https://x.com/Frichette_n/status/2057124497635873081)
 
 ---
 
@@ -14,67 +14,73 @@
 ---
 
 **💰 本期最高赏金 / 最炸裂 payout**  
-本期无高互动/突破性情报（窗口内H1披露多为常规，未见P1/Critical大额公开）。
+本期无高互动/突破性情报（窗口内公开披露多为常规，无明确超高赏金 P1 细节公开）。
 
 **☁️ 云安全重点(特别加强板块)**  
-- **GitHub内部仓库遭恶意VS Code扩展入侵**  
-  - 🌟 亮点总结: 恶意VS Code扩展利用开发者IDE高权限访问，成功入侵GitHub内部仓库并暴露敏感代码。社区聚焦扩展权限过大、频繁更新及运行时行为风险，Datadog Security Research强调IDE扩展作为新攻击面，推荐IDE Shepherd等运行时监控工具。该事件凸显供应链攻击从开发者桌面向企业内部渗透的新路径，尤其影响云/AI开发环境。 [[1]](https://x.com/Frichette_n/status/2057124497635873081) [[2]](https://x.com/Frichette_n/status/2056916606840717752) | 👍 74 | 🔄 19 | 👀 10k+  
-  - 🔗 来源: GitHub相关调查及Frichette_n分析 | 📅 2026-05-19~20
+- **GitHub内部仓库遭未授权访问（疑似恶意VS Code扩展入侵）**  
+  - 🌟 亮点总结: 恶意VS Code扩展可访问开发者IDE环境并暴露内部仓库，扩展权限过大与更新机制是核心风险。Datadog Security Research推荐运行时监控（如IDE Shepherd）。云/DevSecOps环境中IDE供应链安全成为新焦点。 [[2]](https://x.com/Frichette_n/status/2057124497635873081) | 👍 79 | 🔄 19 | 👀 11k+  
+  - 🔗 来源: @Frichette_n | 📅 2026-05-20  
 
-- **Railway GCP账户事件post-mortem**  
-  - 🌟 亮点总结: Railway分享GCP账户事件后处理，计划减少对单一云服务依赖以提升可靠性。事件提醒云多租户配置错误可能导致服务中断，需强化多云策略、IMDS/元数据访问控制及资产管理。 [[3]](https://x.com/berenddeboer/status/2057249343560896728) | 👍 476 | 🔄 41 | 👀 186k+  
-  - 🔗 来源: Railway官方更新 | 📅 2026-05-20
+- **Verizon DBIR 2026：软件漏洞利用首次超越凭证窃取**  
+  - 🌟 亮点总结: 漏洞武器化速度加快，利用窗口大幅缩短，年度测试已不足。强调云环境持续暴露验证（continuous exposure assessment）及IAM、API、配置监控需求。 [[3]](https://x.com/Bugcrowd/status/2057213387528962431) | 👍 221 | 🔄 33 | 👀 5k+  
+  - 🔗 来源: @Bugcrowd | 📅 2026-05-20  
 
-- **Tenable Cloud and AI Security Risk Report 2026讨论**  
-  - 🌟 亮点总结: 报告指出86%组织托管含Critical漏洞的第三方代码包，18%存在overprivileged AI identities，工程速度超越安全控制形成AI暴露差距。强调供应链风险、云凭证暴露及AI集成管控缺失，呼吁加强暴露管理（历史参考）。  
-  - 🔗 来源: Tenable报告及相关讨论 | 📅 窗口内传播
+- **TeamPCP供应链攻击（Durable Task PyPI投毒）**  
+  - 🌟 亮点总结: Microsoft Durable Task Python客户端v1.4.1~1.4.3恶意版本已隔离，攻击者利用加密provenance绕过信任机制。云/DevOps环境需立即审计依赖。 [[4]](https://x.com/wiz_io/status/2056860353753907586) | 👍 23 | 🔄 6 | 👀 ~2k  
+  - 🔗 来源: @wiz_io | 📅 2026-05-19  
 
 **📚 最值得读的 Writeup / 公开报告**  
-- **Rocket.Chat / Enjin / curl 等H1披露**  
-  - 📝 技术摘要: 窗口内@disclosedh1通报多条H1公开报告，涉及Web/API/库相关漏洞，适合复现分析配置或逻辑问题。 [[4]](https://x.com/disclosedh1/status/2057091580389937409) | 👍 低 | 🔄 低 | 👀 ~1k  
-  - 🔗 链接: hackerone.com/reports/... | 📅 2026-05-20
+- **Google Cloud Looker RCE技术细节**  
+  - 📝 技术摘要: 利用.git目录缺失但工作树残留，通过伪造config/hooks实现RCE，结合Kubernetes serviceaccount提权。展示云原生文件操作与容器逃逸高危链路。 [[5]](https://x.com/ctbbpodcast/status/2057084367638344111) | 👍 31 | 🔄 1 | 👀 2.3k  
+  - 🔗 来源: X线程 | 📅 2026-05-20  
 
-- **Claude Code技能 bundle for Bug Hunting**  
-  - 📝 技术摘要: 包含51 skills、15 slash commands、574+ disclosed report patterns，覆盖24类漏洞及企业身份/基础设施攻击矩阵，助力漏洞研究与红队实践。 [[5]](https://x.com/Dinosn/status/2056977696844808465) | 👍 低 | 🔄 低 | 👀 低  
-  - 🔗 链接: GitHub elementalsouls/Claude-BugHunter | 📅 2026-05-20
+- **ASPI: Seeking Ambiguity Clarification Amplifies Prompt Injection in LLM Agents**  
+  - 📝 技术摘要: LLM代理澄清寻求行为放大提示注入漏洞，arXiv论文分析ambiguity处理利用方式，影响AI代理安全边界。 [[6]](https://x.com/FSFG/status/2056946766675689831)  
+  - 🔗 链接: https://arxiv.org/abs/2605.17324 | 📅 2026-05-20  
 
 **🔥 社区热议的技术话题或新手法**  
-- **VS Code / IDE扩展供应链风险与开发者环境监控**  
-  - 💬 讨论核心: 恶意扩展可直接 compromise 开发者设备并扩展至内部仓库，社区呼吁评估扩展权限、最小权限原则及运行时行为监控。该话题与GitHub事件紧密关联，超出传统Web漏洞范畴。 [[1]](https://x.com/Frichette_n/status/2057124497635873081) | 👍 74 | 🔄 19 | 👀 10k+  
-  - 🔗 代表性推文: @Frichette_n | 📅 2026-05-20
+- **Bug Bounty payloads & recon工具分享（VIEH Group）**  
+  - 💬 讨论核心: 覆盖XSS/SQLi/SSRF/LFI/Command Injection/SSTI/JWT等多类高级payloads及100+ recon工具（含S3Scanner、cloud_enum等）。强调理解原理，适合猎人实战。 [[7]](https://x.com/viehgroup/status/2057160045285286153) | 👍 50+ | 🔄 10+ | 👀 1k+  
+  - 🔗 代表性推文: @viehgroup | 📅 2026-05-20  
 
-- **Recon工具链与云资产枚举**  
-  - 💬 讨论核心: 社区分享100+ Recon工具列表，重点覆盖S3Scanner、cloud_enum、enumerate-iam、Pacu等，适用于AWS/Azure/GCP misconfig发现，适合Bug Bounty与红队实战。 [[6]](https://x.com/viehgroup/status/2057157634743267643) | 👍 40 | 🔄 10 | 👀 ~1k  
-  - 🔗 代表性推文: @viehgroup | 📅 2026-05-20
+- **VS Code / IDE扩展供应链风险**  
+  - 💬 讨论核心: 扩展运行时权限过高易导致供应链入侵，社区呼吁审查开发者IDE环境并加强运行时监控。 [[2]](https://x.com/Frichette_n/status/2057124497635873081) | 👍 79 | 🔄 19 | 👀 11k+  
+  - 🔗 代表性推文: @Frichette_n | 📅 2026-05-20  
 
-- **Agentic AI安全与Prompt Injection**  
-  - 💬 讨论核心: Microsoft Semantic Kernel等prompt injection可导致RCE，社区关注shadow agents、MCP协议及动态least privilege，强调Agent工具调用需严格沙箱。  
-  - 🔗 代表性推文: 相关AI安全讨论 | 📅 2026-05-21
+- **AI/LLM代理安全与提示注入**  
+  - 💬 讨论核心: 焦点在防止密钥泄露、提示注入及数据丢失，提出能力跟踪等新架构。AI工具加速漏洞发现与利用。 [[8]](https://x.com/odersky/status/2057036752041263536) | 👍 89 | 🔄 25 | 👀 20k+  
+  - 🔗 代表性推文: X相关讨论 | 📅 2026-05-20  
 
 **🆕 新上线 / 更新中的 Bug Bounty 或 VDP 项目**  
-- **Immunefi $5M DeFi支持程序**  
-  - 📝 更新点: 激励安全审计与漏洞报告，提升DeFi生态安全性（窗口内传播）。 [[7]](https://x.com/Brusca/status/2057172379160186968) | 👍 低~30 | 🔄 低 | 👀 数百  
-  - 🔗 来源: X公告 | 📅 2026-05-16（窗口内讨论）
+- **Intigriti Bug Bounty Village @ OrangeCon**  
+  - 📝 更新点: 6月4日阿姆斯特丹现场hacking活动，助力社区交流与新人入门。 [[9]](https://x.com/intigriti/status/2057130996168814980) | 👍 15 | 🔄 1 | 👀 1.2k  
+  - 🔗 来源: @intigriti | 📅 2026-05-20  
 
-- **Bugcrowd/Intigriti 社区活动**  
-  - 📝 更新点: Bugcrowd分享DBIR 2026趋势，Intigriti举办OrangeCon Bug Bounty Village。  
-  - 🔗 来源: 官方账号 | 📅 2026-05-20
+- **RGB Protocol Bug Bounty程序调整**  
+  - 📝 更新点: 因AI工具改变漏洞发现流程，正在重新设计程序结构以更好奖励有效工作，暂缓重新开放。 [[10]](https://x.com/RGBAssociation/status/2057169743283450134) | 👍 8 | 🔄 3 | 👀 ~900  
+  - 🔗 来源: @RGBAssociation | 📅 2026-05-20  
 
 **📢 平台动态 & 政策变化**  
-- **Verizon DBIR 2026关键洞察**（Bugcrowd分享）  
-  - 漏洞利用首次超越凭证窃取成为首要初始访问向量，凸显经济驱动的快速武器化趋势，呼吁转向持续暴露管理。 [[8]](https://x.com/Bugcrowd/status/2057213387528962431) | 👍 5~30 | 🔄 低 | 👀 数百~4k  
-  - 🔗 来源: @Bugcrowd | 📅 2026-05-20
+- **Bugcrowd响应DBIR 2026推广持续暴露评估**  
+  - 中文概述内容及影响: 强调continuous exposure assessment，应对漏洞利用窗口缩短趋势。 [[11]](https://x.com/Bugcrowd/status/2057145217313116277) | 👍 低 | 🔄 低 | 👀 ~900  
+  - 🔗 来源: @Bugcrowd | 📅 2026-05-20  
+
+- **HackerOne常规披露（Rocket.Chat、Enjin、curl等）**  
+  - 中文概述内容及影响: 多项API/工具类常规漏洞公开，无重大云/AI影响。 [[12]](https://x.com/disclosedh1/status/2057091580389937409) | 👍 低 | 🔄 低 | 👀 ~1k  
+  - 🔗 来源: @disclosedh1 | 📅 2026-05-20  
 
 **🏆 猎人里程碑 / 大额奖励**  
-本期无高互动/突破性情报。
+- **Apple Bug Bounty加速支付**  
+  - 中文概述内容及影响: 猎人分享加速支付体验，优秀漏洞暂无法公开讨论。 [[13]](https://x.com/slinafirinne/status/2057267853737292167) | 👍 10 | 🔄 低 | 👀 ~500  
+  - 🔗 来源: @slinafirinne | 📅 2026-05-21  
 
 **☕ 其他有趣八卦 / 吐槽 / 预警**  
-- **Bug Bounty猎人个人最佳月分享**  
-  - @efaav分享本月最佳表现并获首个testimonial，激励社区持续投入Recon与高价值漏洞挖掘。 [[9]](https://x.com/efaav/status/2057213696741392679) | 👍 47 | 🔄 低 | 👀 1k+  
-  - 🔗 来源: @efaav | 📅 2026-05-20
+- **Google Cloud可靠性事件**  
+  - 中文描述内容: 用户报告配额自动降低引发问题，提醒避免用于关键路径。 [[14]](https://x.com/JustJake/status/2056962874212594006) | 👍 164 | 🔄 2 | 👀 13k+  
+  - 🔗 来源: X帖子 | 📅 2026-05-20  
 
-- **LayerZero事件post-mortem讨论**  
-  - LayerZero发布4月事件完整报告，社区讨论理论攻击向量对DeFi/Web3协议的启示（历史参考）。 [[10]](https://x.com/0xriptide/status/2057140126640136578) | 👍 93 | 🔄 4 | 👀 7k+  
-  - 🔗 来源: 相关X讨论 | 📅 2026-05-20
+- **Bug Bounty猎人吐槽平台处理**  
+  - 中文描述内容: 报告被拖延后标informational或端点下线，质疑公平性。 [[15]](https://x.com/arth_bajpai/status/2057186055879847936) | 👍 ~20+ | 🔄 低 | 👀 中  
+  - 🔗 来源: @arth_bajpai | 📅 2026-05-20  
 
-本期以GitHub IDE供应链事件及Railway云事件为主，云/AI开发者工具链与暴露管理风险受关注。高热度Critical披露较少，建议重点监控IDE扩展、Agentic AI工具调用及云IAM配置。
+**总体趋势点评**: 本窗口云安全焦点在于IDE供应链、云身份滥用及漏洞利用窗口缩短；AI工具在攻防两端加速应用。建议优先审计IDE策略、云IAM/依赖供应链及持续暴露验证。情报基于公开来源，实际验证以官方通道为准。
