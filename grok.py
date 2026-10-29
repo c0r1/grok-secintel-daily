@@ -32,6 +32,7 @@ TEMPERATURES = [0.5, 0.7, 0.9]
 THINKING_TEMPERATURE = 0.7
 API_TIMEOUT = 300.0  # 秒
 MAX_RETRIES = 2  # 最多重试 2 次（总共尝试 3 次）
+SUMMARY_MAX_RETRIES = 3  # 汇总最多重试 3 次（总共尝试 4 次）
 MAX_CONTENT_LENGTH = 15000  # 每份 fast 输出的最大字符数，避免 thinking 上下文过长
 RETRY_MIN_DELAY = 2.0
 RETRY_MAX_DELAY = 5.0
@@ -183,10 +184,29 @@ def extract_response_content(response: object) -> str | None:
             return content or None
         return None
 
-    content = response.choices[0].message.content
-    if isinstance(content, str):
-        return sanitize_model_output(content)
-    return None
+    choices = getattr(response, "choices", None)
+    if choices:
+        content = choices[0].message.content
+        if isinstance(content, str):
+            return sanitize_model_output(content)
+        return None
+
+    try:
+        chunks = iter(response)
+    except TypeError:
+        return None
+
+    parts = []
+    for chunk in chunks:
+        chunk_choices = getattr(chunk, "choices", None)
+        if not chunk_choices:
+            continue
+        delta = getattr(chunk_choices[0], "delta", None)
+        piece = getattr(delta, "content", None)
+        if isinstance(piece, str):
+            parts.append(piece)
+    content = sanitize_model_output("".join(parts))
+    return content or None
 
 
 def get_retry_after_seconds(error: Exception) -> float | None:
@@ -253,10 +273,12 @@ def call_with_retry(
     temperature: float,
     label: str,
     use_web_search: bool = True,
+    max_retries: int | None = None,
 ) -> str | None:
     """带重试的 API 调用；成功返回内容，失败返回 None。"""
+    retry_limit = MAX_RETRIES if max_retries is None else max_retries
     next_retry_delay = None
-    for attempt in range(MAX_RETRIES + 1):
+    for attempt in range(retry_limit + 1):
         try:
             if attempt == 0:
                 log(f"   {label} ...")
@@ -265,22 +287,21 @@ def call_with_retry(
                 if delay is None:
                     delay = random.uniform(RETRY_MIN_DELAY, RETRY_MAX_DELAY)
                 next_retry_delay = None
-                log(f"   {label} retry {attempt}/{MAX_RETRIES} (sleep {delay:.1f}s)...")
+                log(f"   {label} retry {attempt}/{retry_limit} (sleep {delay:.1f}s)...")
                 time.sleep(delay)
 
-            start_time = time.time()
+            request_start = time.monotonic()
             request_kwargs = {
                 "model": model,
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": temperature,
-                "stream": False,
+                "stream": True,
             }
             if use_web_search:
                 request_kwargs["extra_body"] = {"tools": [WEB_SEARCH_TOOL]}
             response = client.chat.completions.create(**request_kwargs)
-            elapsed = time.time() - start_time
-
             content = extract_response_content(response)
+            elapsed = time.monotonic() - request_start
             if content:
                 content = content.strip()
                 log(f"   {label} ok ({elapsed:.1f}s, {len(content)} chars)")
@@ -300,7 +321,7 @@ def call_with_retry(
             retry_after = get_retry_after_seconds(e)
             if retry_after is not None:
                 next_retry_delay = retry_after
-            if attempt == MAX_RETRIES:
+            if attempt == retry_limit:
                 log(f"   {label} ERROR (final): {e}")
             else:
                 log(f"   {label} ERROR: {e}")
@@ -351,6 +372,7 @@ def call_thinking_model(
         THINKING_TEMPERATURE,
         "[汇总]",
         use_web_search=False,
+        max_retries=SUMMARY_MAX_RETRIES,
     )
 
     return result
@@ -405,7 +427,7 @@ def inject_generated_time(content: str, now: datetime) -> str:
 
 
 def main() -> None:
-    start_time = time.time()
+    run_start = time.monotonic()
 
     # 在整个流程中统一使用同一个时间点，避免跨天边界不一致
     now = get_now()
@@ -500,7 +522,7 @@ def main() -> None:
         log("   已写入 GITHUB_OUTPUT")
 
     # 8. 完成
-    elapsed = time.time() - start_time
+    elapsed = time.monotonic() - run_start
     if dry_run:
         log(f"\n完成 (DRY_RUN, {elapsed:.1f}s)")
     else:

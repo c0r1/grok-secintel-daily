@@ -82,13 +82,16 @@ jobs:
             exit 0
           fi
 
+          run_base_sha=$(git rev-parse HEAD)
           git commit -m "📝 Daily report ${{ steps.run_script.outputs.report_date }}"
+          rebase_base_sha=$run_base_sha
 
           # Push 可能因远端分支前进而失败（非 fast-forward），做有限重试：fetch+rebase+push
           for attempt in 1 2 3; do
             echo "Push attempt $attempt/3..."
-            git fetch origin "refs/heads/$TARGET_REF:refs/remotes/origin/$TARGET_REF"
-            git rebase "refs/remotes/origin/$TARGET_REF"
+            git fetch origin "+refs/heads/$TARGET_REF:refs/remotes/origin/$TARGET_REF"
+            git rebase --onto "refs/remotes/origin/$TARGET_REF" "$rebase_base_sha"
+            rebase_base_sha=$(git rev-parse "refs/remotes/origin/$TARGET_REF")
             if git push origin "HEAD:refs/heads/$TARGET_REF"; then
               echo "Push ok."
               exit 0

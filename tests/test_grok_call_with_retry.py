@@ -30,6 +30,19 @@ class _FakeClient:
         self.chat = _FakeChat(result)
 
 
+class _FakeStream:
+    def __init__(self, pieces):
+        self._chunks = [
+            SimpleNamespace(
+                choices=[SimpleNamespace(delta=SimpleNamespace(content=piece))]
+            )
+            for piece in pieces
+        ]
+
+    def __iter__(self):
+        return iter(self._chunks)
+
+
 class CallWithRetryTests(unittest.TestCase):
     def test_request_includes_web_search_tool_by_default(self):
         response = SimpleNamespace(
@@ -41,6 +54,7 @@ class CallWithRetryTests(unittest.TestCase):
             result = grok.call_with_retry(client, grok.FAST_MODEL, 'prompt', 0.1, '[1/1]')
 
         self.assertEqual(result, 'ok')
+        self.assertTrue(client.chat.completions.calls[0]['stream'])
         self.assertEqual(
             client.chat.completions.calls[0]['extra_body'],
             {'tools': [{'type': 'web_search'}]},
@@ -58,11 +72,24 @@ class CallWithRetryTests(unittest.TestCase):
         with mock.patch.object(grok, 'MAX_RETRIES', 1), \
              mock.patch.object(grok, 'time') as fake_time, \
              mock.patch.object(grok, 'log'):
-            fake_time.time.return_value = 0.0
+            fake_time.monotonic.return_value = 0.0
             result = grok.call_with_retry(client, grok.FAST_MODEL, 'prompt', 0.7, '[汇总]')
 
         self.assertEqual(result, 'ok')
         fake_time.sleep.assert_called_once_with(120.0)
+
+    def test_parses_streaming_response(self):
+        client = _FakeClient(_FakeStream(['你', '好']))
+
+        with mock.patch.object(grok, 'MAX_RETRIES', 0), \
+             mock.patch.object(grok, 'time') as fake_time, \
+             mock.patch.object(grok, 'log') as log:
+            fake_time.monotonic.side_effect = [10.0, 25.0]
+            content = grok.call_with_retry(client, grok.FAST_MODEL, 'prompt', 0.7, '[1/1]')
+
+        self.assertEqual(content, '你好')
+        self.assertTrue(client.chat.completions.calls[0]['stream'])
+        log.assert_any_call('   [1/1] ok (15.0s, 2 chars)')
 
     def test_retry_after_http_date_is_parsed(self):
         error = Exception('503 unavailable')
@@ -155,6 +182,7 @@ class CallWithRetryTests(unittest.TestCase):
         self.assertEqual(result, 'summary-1')
         retry_call.assert_called_once()
         self.assertEqual(retry_call.call_args.kwargs['use_web_search'], False)
+        self.assertEqual(retry_call.call_args.kwargs['max_retries'], 3)
         self.assertEqual(retry_call.call_args.args[3], 0.7)
         prompt = retry_call.call_args.args[2]
         self.assertIn('【第 1 份内容】\ndraft-1', prompt)
