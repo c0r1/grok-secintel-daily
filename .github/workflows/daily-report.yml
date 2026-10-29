@@ -64,22 +64,13 @@ jobs:
           XAI_BASE_URL: ${{ secrets.XAI_BASE_URL }}
         run: |
           set -euo pipefail
-          # Workflow 级兜底：脚本内部已有请求级重试；这里额外对整次运行做有限重试，覆盖网络抖动/偶发超时。
-          for attempt in 1 2 3; do
-            echo "Run attempt $attempt/3..."
-            if python grok.py; then
-              echo "Run ok."
-              exit 0
-            fi
-            echo "Run failed; retry in $((attempt * 10))s..."
-            sleep $((attempt * 10))
-          done
-          echo "Run failed after retries."
-          exit 1
+          python grok.py
         # 脚本会自动输出 report_date 和 output_path 到 GITHUB_OUTPUT
       
       - name: Commit and push output
         if: env.DRY_RUN != '1'
+        env:
+          TARGET_REF: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -96,9 +87,9 @@ jobs:
           # Push 可能因远端分支前进而失败（非 fast-forward），做有限重试：fetch+rebase+push
           for attempt in 1 2 3; do
             echo "Push attempt $attempt/3..."
-            git fetch origin "${{ github.ref_name }}"
-            git rebase "origin/${{ github.ref_name }}"
-            if git push origin HEAD:"${{ github.ref_name }}"; then
+            git fetch origin "refs/heads/$TARGET_REF:refs/remotes/origin/$TARGET_REF"
+            git rebase "refs/remotes/origin/$TARGET_REF"
+            if git push origin "HEAD:refs/heads/$TARGET_REF"; then
               echo "Push ok."
               exit 0
             fi
@@ -112,6 +103,8 @@ jobs:
       - name: Notify via GitHub issue comment
         continue-on-error: true
         uses: actions/github-script@v7
+        env:
+          TARGET_REF: ${{ github.ref_name }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -122,7 +115,7 @@ jobs:
 
             const reportDate = `${{ steps.run_script.outputs.report_date }}`;
             const outputPath = `${{ steps.run_script.outputs.output_path }}`;
-            const branch = `${{ github.ref_name }}`;
+            const branch = process.env.TARGET_REF;
 
             const yyyyMm = reportDate.slice(0, 7); // YYYY-MM
             const title = `Daily Report ${yyyyMm}`;
@@ -245,15 +238,17 @@ jobs:
               await unlockIssue(canonical.number);
             }
 
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: canonical.number,
-              body: comment,
-            });
-
-            if (shouldBeLocked) {
-              await lockIssue(canonical.number);
+            try {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: canonical.number,
+                body: comment,
+              });
+            } finally {
+              if (shouldBeLocked) {
+                await lockIssue(canonical.number);
+              }
             }
 
             if (!dryRun) {

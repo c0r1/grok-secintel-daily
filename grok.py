@@ -14,7 +14,8 @@ import random
 import re
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -24,10 +25,11 @@ except ModuleNotFoundError:
     OpenAI = None  # type: ignore[assignment]
 
 # --- 常量配置 ---
-FAST_MODEL = "grok-4.20-fast"
+FAST_MODEL = "grok-4.7"
 THINKING_MODEL = FAST_MODEL
-TEMPERATURES = [0.1, 0.6, 1.0]
-THINKING_TEMPERATURE = 0.1
+WEB_SEARCH_TOOL = {"type": "web_search"}
+TEMPERATURES = [0.5, 0.7, 0.9]
+THINKING_TEMPERATURE = 0.7
 API_TIMEOUT = 300.0  # 秒
 MAX_RETRIES = 2  # 最多重试 2 次（总共尝试 3 次）
 MAX_CONTENT_LENGTH = 15000  # 每份 fast 输出的最大字符数，避免 thinking 上下文过长
@@ -186,30 +188,95 @@ def extract_response_content(response: object) -> str | None:
     return None
 
 
+def get_retry_after_seconds(error: Exception) -> float | None:
+    """Read Retry-After seconds or an HTTP date from headers or the error body."""
+    def parse_delay(value: object) -> float | None:
+        try:
+            return max(0.0, float(value))
+        except (TypeError, ValueError):
+            try:
+                retry_at = parsedate_to_datetime(str(value))
+            except (TypeError, ValueError, OverflowError):
+                return None
+            if retry_at.tzinfo is None:
+                retry_at = retry_at.replace(tzinfo=timezone.utc)
+            return max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
+
+    response = getattr(error, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers is not None:
+        value = headers.get("retry-after")
+        if value is not None:
+            delay = parse_delay(value)
+            if delay is not None:
+                return delay
+
+    body = getattr(error, "body", None)
+    if isinstance(body, dict):
+        value = body.get("retry_after")
+        if value is None and isinstance(body.get("error"), dict):
+            value = body["error"].get("retry_after")
+        if value is not None:
+            return parse_delay(value)
+    return None
+
+
+def is_retryable_error(error: Exception) -> bool:
+    """Retry transient HTTP failures and transport errors, not permanent 4xx."""
+    status_code = getattr(error, "status_code", None)
+    if status_code is not None:
+        try:
+            status_code = int(status_code)
+        except (TypeError, ValueError):
+            return False
+        return status_code in (408, 409, 425, 429) or 500 <= status_code <= 599
+
+    return isinstance(error, (TimeoutError, ConnectionError)) or type(error).__name__ in {
+        "APIConnectionError",
+        "APITimeoutError",
+        "ConnectError",
+        "ConnectTimeout",
+        "PoolTimeout",
+        "ReadError",
+        "ReadTimeout",
+        "TimeoutException",
+        "WriteError",
+        "WriteTimeout",
+    }
+
+
 def call_with_retry(
     client: OpenAI,
     model: str,
     prompt: str,
     temperature: float,
     label: str,
+    use_web_search: bool = True,
 ) -> str | None:
     """带重试的 API 调用；成功返回内容，失败返回 None。"""
+    next_retry_delay = None
     for attempt in range(MAX_RETRIES + 1):
         try:
             if attempt == 0:
                 log(f"   {label} ...")
             else:
-                delay = random.uniform(RETRY_MIN_DELAY, RETRY_MAX_DELAY)
+                delay = next_retry_delay
+                if delay is None:
+                    delay = random.uniform(RETRY_MIN_DELAY, RETRY_MAX_DELAY)
+                next_retry_delay = None
                 log(f"   {label} retry {attempt}/{MAX_RETRIES} (sleep {delay:.1f}s)...")
                 time.sleep(delay)
 
             start_time = time.time()
-            response = client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                stream=False,
-            )
+            request_kwargs = {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+                "stream": False,
+            }
+            if use_web_search:
+                request_kwargs["extra_body"] = {"tools": [WEB_SEARCH_TOOL]}
+            response = client.chat.completions.create(**request_kwargs)
             elapsed = time.time() - start_time
 
             content = extract_response_content(response)
@@ -226,6 +293,12 @@ def call_with_retry(
             if "No available accounts" in err_str or "model tier" in err_str:
                 log(f"   {label} FATAL: 账户无此模型权限，跳过重试 — {e}")
                 return None
+            if not is_retryable_error(e):
+                log(f"   {label} FATAL: 不可重试错误，停止重试 — {e}")
+                return None
+            retry_after = get_retry_after_seconds(e)
+            if retry_after is not None:
+                next_retry_delay = retry_after
             if attempt == MAX_RETRIES:
                 log(f"   {label} ERROR (final): {e}")
             else:
@@ -276,6 +349,7 @@ def call_thinking_model(
         summary_prompt,
         THINKING_TEMPERATURE,
         "[汇总]",
+        use_web_search=False,
     )
 
     return result
@@ -355,6 +429,7 @@ def main() -> None:
             api_key=api_key,
             base_url=base_url,
             timeout=API_TIMEOUT,
+            max_retries=0,
             default_headers={
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
             },
