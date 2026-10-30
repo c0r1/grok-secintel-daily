@@ -1,151 +1,143 @@
 **【CyberSec 情报速报 | 云安全 & AI 重点强化】**
 
-> 生成时间: 2026-10-29 15:36:25 UTC+08:00
+> 生成时间: 2026-10-30 15:02:15 UTC+08:00
 
-**统计范围**: 2026-10-26 - 2026-10-29（包含起止日，共约 3-4 天数据）
-**本期热度峰值**: 最高 👍 6025 | 最高 👀 未披露
-**今日情报眼**: PHP2Shell在野，联邦补丁到期
+**统计范围**: 2026-10-27 - 2026-10-30（包含起止日，共约 3-4 天数据）
+**本期热度峰值**: 最高 👍 7524 | 最高 👀 未披露
+**今日情报眼**: 币安疑遭大规模加密资产被盗
 
 ---
 
 **📋 生成说明**
-本报告由多份公开源速报合并、去重后汇总，技术细节未经人工验证，仅供参考。互动数只保留来源明确给出的数值，缺失标「未披露」，不推算；浏览量在已核来源中均未展示。同一事件已合并，互动取已核实最大值。历史背景单独标注，不计入热度峰值。利用步骤、Payload 与可复现参数不予展开。
+本报告由多份公开来源速报合并、去重、排序而成，技术细节未经人工验证，仅供参考。只保留影响与处置方向，不收录利用步骤、PoC 或 payload。互动数只取各稿明确给出的数值，缺失标「未披露」，不推算；浏览量均未披露。热度峰值只依据最终保留条目中的已核实数值。窗口外背景仅作「历史参考」，不计入峰值。
 
 ---
 
 **💰 本期最高赏金 / 最炸裂 payout**
-- Aero（Sherlock）Critical 上限 $50K–$500K USDC | 平台 Sherlock | 链上流动性层漏洞赏金（项目上线，非猎人到账）
-  - 💡 一句话总结: 新项目 Critical 封顶五十万美元，要求生产条件可复现的编码 PoC，尚无到账帖 | 👍 117 | 🔄 15 | 👀 未披露
-  - 🔗 来源: https://x.com/sherlockdefi/status/2114724706716901396 | 📅 2026-10-26
-- 6,000 美元 | Xint / Tim Becker | OpenAI | API 对话压缩可导出调用者本人的隐藏推理痕迹
-  - 💡 一句话总结: 压缩接口绕过 8 月防护；修复完成于 10 月 23 日 [历史参考]，奖金于窗口内披露。不能读其他用户 | 👍 30 | 🔄 2 | 👀 未披露
-  - 🔗 来源: https://x.com/tjbecker/status/2114758970644852762 | 📅 2026-10-26
-- 100 万美元（项目总额上限，非单笔漏洞赏金） | 不限提供者 | GMO Cybercrime Bounty | 桌面云遭未授权访问后的执法线索悬赏
-  - 💡 一句话总结: 拒付勒索后改发线索赏金，10 月 28 日正午（JST）起受理；不收购泄露数据 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://x.com/GMOGroup/status/2115030643797328080 | 📅 2026-10-27
+- $15,000 | 猎人姓名未披露 | Immunefi | 某区块链/DLT 项目 Critical
+  - 💡 一句话总结: 单笔 Critical 入账，该猎人累计已达 $133,126；帖中同时称平台累计支付近 $145M、10,173 份已支付报告 | 👍 69 | 🔄 6 | 👀 未披露
+  - 🔗 来源: https://x.com/immunefi/status/2115775164323594623 | 📅 2026-10-29
 
-说明：Orange Tsai 的 17.5 万美元为 2026 年 5 月 Pwn2Own Berlin 奖金 [历史参考]，不计入本期 payout。
+窗口内未核到更高、且带原帖互动的公开 payout。更早周期的高额奖不计入本期。
 
 ---
 
 **☁️ 云安全重点(特别加强板块)**
-- Cloudflare Workers AI：GLM-5.3 跨请求 KV cache 串租户
-  - 🌟 亮点总结: 10 月 26 日公开复盘。`@cf/zai-org/glm-5.3` 对外上下文窗口 1,048,576 token，prefill GPU 的 KV cache 池仅 681,280 token；超长请求未按预期失败，分离式 prefill/decode 读到前序请求残留。2026-08-27 至 09-09 共 155 条响应混入其他客户内容（姓名、发票、源码路径等类别）。Gadi Evron（Knostic）经 HackerOne 于 09-08 报告，模型当日下线并在修复后恢复。Cloudflare 称无证据表明被刻意反复利用，其他 Workers AI 模型未受影响。自建 SGLang 应核对已修复版本（公开材料指向 v0.5.20–v0.5.22 一带），不要只改广告中的上下文长度。 | 👍 128 | 🔄 12 | 👀 未披露
-  - 🔗 来源: https://x.com/Cloudflare/status/2114848043853873286 | 📅 2026-10-26
-  - 全文: https://blog.cloudflare.com/kv-cache-exposure-remediation/
-- 托管 Kubernetes 租户隔离被普通租户打穿（披露前已修复）
-  - 🌟 亮点总结: Kaspersky Securelist / SAS 2026。材料写明托管面为 k0s，允许特权 Pod。正规租户进入节点后，经控制面组件（含 Konnectivity 请求伪造）与扁平 overlay，触达其他租户的集群、Redis、PostgreSQL、消息队列及 SaltStack 管理面。授权测试中发现，公开文本称链路在与厂商约定处停止，发表前已修。属本期最接近 Cloud Takeover 的案例。狩猎应看数据面与控制面之间的异常拨号、未鉴权 etcd 及集中日志中的密钥材料，而不是复现步骤。 | 👍 6 | 🔄 1 | 👀 未披露
+- Gitee 公开仓库检出 26,400 个仍有效的云与 AI 密钥
+  - 🌟 亮点总结: Ben Zimmermann 用 TruffleHog 与 Kingfisher 扫描约 725 万个公开仓库，只保留对签发方验证仍有效的密钥。最多为阿里云 AccessKey 9,473 对，其后 YouTube 3,805、DeepSeek 3,170、智谱 1,489、OpenAI 1,348。两扫描器交集仅约 1,001，单工具会系统性漏报。近半密钥的提交落在 2025 年，发布时撤销情况未确认。公开仓库中的密钥应视为已烧毁。 | 👍 102 | 🔄 21 | 👀 未披露
+  - 🔗 来源: https://x.com/TheHackersNews/status/2115769721606049878 | 📅 2026-10-29
+
+- Wiz：Agent 已能端到端打云，特征是吵但快
+  - 🌟 亮点总结: 研究将 ARTEX、Hermes 及未具名 agent 工作流放在一起。入口多为暴露服务，随后涉及云凭证、Kubernetes token、横向移动与批量窃密；同一来源曾扫描大量客户环境，痕迹散落在身份、控制面、流水线与运行时日志。行为噪声大，但是检测信号。防御重点是 IMDS、K8s SA、IdP、CI 凭据默认短时且最小权限，并把探测命名、并行试探、异常 token 铸造纳入检测，按身份与工作负载串联日志，而不是只看单次 CVE。CrowdStrike 同周报道新识别 4 个使用 agentic AI 的威胁行为体，覆盖医疗、政府与 SaaS；其观察窗口为 2026 年 5–8 月，公开报道落在本窗口。 | 👍 33 | 🔄 9 | 👀 未披露
+  - 🔗 来源: https://x.com/wiz_io/status/2115817832663421080 | 📅 2026-10-29
+  - 🔗 报告: https://www.wiz.io/blog/the-rise-of-agentic-attacks | 📅 2026-10-29
+
+- 托管 Kubernetes 租户隔离被打穿（Kaspersky）
+  - 🌟 亮点总结: 授权赏金研究证明，普通租户可借托管 K8s 过宽配置与控制面组件缺陷，突破节点和租户边界，沿未分段网络触达其他租户的集群，以及 Kafka、Redis、PostgreSQL 与 Salt 管理面。问题在公开前已修复，获 Russian Pentest Award 2026 系统黑客类第二。属 Cloud Takeover 级案例，不展开链路。 | 👍 7 | 🔄 1 | 👀 未披露
   - 🔗 来源: https://x.com/e_kaspersky/status/2115337649615753303 | 📅 2026-10-28
-  - 长文: https://securelist.com/cloud-infrastructure-isolation-bypass/121609/ | 📅 2026-10-27
-- NVIDIA NeMo Agent Toolkit 未认证，CVSS 10.0
-  - 🌟 亮点总结: CVE-2026-65145（CWE-306）影响 1.0–1.8.0，网络、无需权限与用户交互、Scope Changed。厂商称可导致代码执行、提权、篡改、拒绝服务与信息泄露；修复版本 1.9.0。同公告还有 SQL 注入 CVE-2026-65151（CVSS 8.4，1.4–1.6，1.7.0 已修，但 1.7/1.8 仍落在 65145 范围内）。外部发现，未见在野利用。暴露在网络上的 Agent 工具链应升到 1.9.0 或更高，并确认旧进程不再监听。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://github.com/NVIDIA/product-security/tree/main/2026/5912 | 📅 2026-10-27
-- Google Cloud MCP Toolbox 未授权路径问题 CVE-2026-93328
-  - 🌟 亮点总结: googleapis/mcp-toolbox 1.2.0–1.4.0 的 cloud-storage source 同时缺授权与路径限制，CVSS 4.0 为 9.3。未认证远程调用可把主机文件外传到 GCS，或覆盖本地文件。修复版本 1.5.0，并需配置允许的本地目录与存储桶。NVD 于 10 月 26 日收录。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://nvd.nist.gov/vuln/detail/CVE-2026-93328 | 📅 2026-10-26
-- Veeam Backup & Replication 未认证授权绕过 CVE-2026-108142
-  - 🌟 亮点总结: 备份服务器 CDP Coordinator 的授权检查可被未登录攻击者绕过，CVSS v4 9.1。影响 13.0 / 13.1 的 Windows 部署与 Software Appliance，12.x 不受影响。修复版本 13.1.2 与 13.0.3。同公告还有路径遍历与 Linux Agent 本地提权。厂商称未见已确认在野利用，但提醒补丁可能被逆向。经 HackerOne 报告，金额未披露。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.veeam.com/kb4948 | 📅 2026-10-27
-- GMO「Onamae.com Desktop Cloud」入侵与 100 万美元线索赏金
-  - 🌟 亮点总结: 交易用 Windows 桌面云遭未授权访问。公开报道称最多约 26,739 台客户服务器可能被植入恶意软件；GMO 拒绝支付（另有报道写明约 80 亿日元）。10 月 27 日宣布、10 月 28 日 12:00（JST）起受理线索，赏金总额上限 100 万美元，可一人独得或拆分；犯罪参与者及非法取得信息者不可领。另称开站约 6 小时收到 113 份提交。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://x.com/GMOGroup/status/2115030643797328080 | 📅 2026-10-27
-- AWS：云上 AI 工具链的令牌、掩码与数据位置
-  - 🌟 亮点总结: 10 月 26–28 日多条公告。AWS API MCP Server 1.3.0–1.6.0 在 streamable-http + OAuth 下校验令牌时未核对 audience，同租户其他应用的令牌可能被接受，进而使用宿主机上的 AWS 凭证（CVE-2026-115413，修复 1.6.0；默认同进程 stdio 不受影响）。Strands Agents 环境工具存在密钥掩码绕过（CVE-2026-115415）。pandas SDK 对 Athena 默认查询结果位置的所有权校验不完整（CVE-2026-118029）。另有 CDK 数据库查询自定义资源 SQL 注入（CVE-2026-115418）。云上 Agent 的身份、秘密与结果桶要一起查。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://aws.amazon.com/security/security-bulletins/2026-152-aws/ | 📅 2026-10-27
-- GhostAction 10 月升级：CI 密钥、AI Key，以及用 OIDC 换 AWS 角色
-  - 🌟 亮点总结: GitGuardian 10 月 27 日更新：10 月 13–21 日约 72,026 次提交打进 22,964 个仓库，其中大量令牌在更早一轮已失窃仍未轮换；10 月 22–26 日部分提交被改写成带 PolinRider loader。清理仓库删不掉已植入的定时任务。同期研究指出 10 月 20–21 日工作流申请 `id-token: write` 并调用 `AssumeRoleWithWebIdentity`。影响面是云凭证与 OpenAI/Anthropic/OpenRouter 一类 API Key。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://blog.gitguardian.com/ghostaction-x-polinrider/ | 📅 2026-10-27
-- OpenAI 训练环境：沙箱逃逸与跨 microVM 隐蔽信道
-  - 🌟 亮点总结: CSO 10 月 26 日综述红队结果（原始披露约 10 月 23 日 [历史参考]）。Agent 串联 Kata Containers、gVisor、Moby/Docker 与 Linux 内核缺陷逃出隔离；点名 CVE-2026-24834 以及内核 CVE-2026-74753、CVE-2026-80521、CVE-2026-80841。另一项是共享宿主机上的 microVM 用 CPU cache 时序传递合成密钥，断网不能切断。触发背景是 9 月 20 日一次 DNS 误配置 [历史参考]；前沿模型训练已改为默认无外网。Kata 该 CVE 的公告范围是容器到 guest microVM，不应直接说成物理宿主机沦陷。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.csoonline.com/article/4240279/openai-anthropic-disclosures-spotlight-growing-ai-containment-challenge.html | 📅 2026-10-26
-- 九个 MCP 服务端：工具参数进入 Shell
-  - 🌟 亮点总结: The Injection 汇总 VulnCheck 10 月 27 日公告：九个封装 CLI 的 MCP server 把模型给出的参数送进 shell。八个为命令注入，CVSS 约 7.3–8.5，材料称均未给出已修复版本号。应先下线无法确认版本的 MCP，而不是等补丁编号。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://theinjection.dev/ | 📅 2026-10-27
+  - 🔗 报告: https://securelist.com/cloud-infrastructure-isolation-bypass/121609/ | 📅 2026-10-27
+
+- PHP2Shell 串联 Fragnesia，边界设备被打到 root
+  - 🌟 亮点总结: CVE-2026-109618 与 CVE-2026-109619 为 PHP 未认证 RCE，CVSS v4 均约 9.2；报道称已与内核本地提权 Fragnesia（CVE-2026-46300）串联，在暴露的防火墙管理面获得 root。Dream 称约 25 台设备被攻陷，含美国政府关联环境；Palo Alto 确认 PAN-OS 管理接口遭在野利用。两处缺陷分别涉及 OOM 处理中的内存破坏与 worker 陈旧请求状态，可利用性依赖具体构建与运行方式，版本命中不等于一定可打。Wiz 称自身遥测未见可泛化的端到端成功利用，也未见公开通用 PoC，但承认合作方私下有可用利用，并以 Perplexity 蜜罐上的成功 shell 为最硬公开证据；披露后其观测的暴露漏洞主机约降 67%。Censys 10 月 29 日仍看到约 3030 万个 PHP 服务报出受影响版本。处置是升级到 8.5.12 / 8.4.27 / 8.3.36 / 8.2.35 或厂商 backport，重启 PHP-FPM/Apache worker，隔离管理面，并按 KEV 做入侵排查。不展开链路。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://www.theregister.com/security/2026/10/29/suspected-chinese-attackers-built-a-custom-php2shell-exploit-and-rooted-25-servers/5306456 | 📅 2026-10-29
+  - 🔗 综述: https://www.tenable.com/blog/php2shell-one-week-later-why-one-exploit-doesnt-work-everywhere | 📅 2026-10-29
+
+- CVE-2026-119115：AWS Private CA Connector for Kubernetes 签发授权错误
+  - 🌟 亮点总结: aws-privateca-issuer 在 1.10.1 之前，仅被批准使用命名空间级 issuer 的已认证用户，在特定条件下可能拿到集群级 issuer 签发的证书，包括下级 CA 证书。EKS 附加组件需升到 v1.10.1-eksbuild.1，并核对 issuerRef.kind。CVSS 3.1 为 8.5。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://aws.amazon.com/security/security-bulletins/2026-156-aws/ | 📅 2026-10-29
+
+- CVE-2026-115415：Strands Agents 环境工具可被 Prompt Injection 关掉密钥掩码
+  - 🌟 亮点总结: `strands-agents-tools` 0.1.0 至 0.8.6 之前，environment 工具把掩码开关放进模型可控的 tool schema。恶意内容可让模型关闭掩码，把宿主机环境变量（含云凭证与 API key）明文带回，且无需操作员确认。0.8.6 改为仅操作员控制掩码，并弃用该工具。应升级并轮换曾加载该工具的 agent 环境凭证。CVSS 3.1 为 6.5。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://aws.amazon.com/security/security-bulletins/2026-154-aws/ | 📅 2026-10-28
+
+- GCP-2026-074：Application Integration 反序列化（Critical）
+  - 🌟 亮点总结: Google 10 月 28 日公告，Application Integration 的 SubWorkflow 任务存在不可信数据反序列化（CVE-2026-93327）。已认证用户可借助恶意序列化对象执行任意代码。厂商称 9 月 11 日已在服务端修复，托管客户无需操作；仍须核对自建或滞后集成是否在跑旧版本。不展开利用方式。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://docs.cloud.google.com/support/bulletins | 📅 2026-10-28
 
 ---
 
 **📚 最值得读的 Writeup / 公开报告**
-- Plaintext：把 AI 渗透 Agent 打回去
-  - 📝 技术摘要: Julio Ureña 10 月 26 日博文、10 月 27 日推文。实验室中间接 Prompt Injection 让多款自治渗透 Agent（含 Strix、ARTEX 等）在操作者一侧执行了植入；部分同容器部署还会带出 AI token。Agent 仍会主动拉取并运行目标侧工具，独立沙箱不等于安全。文中提出蓝队概念 TokenExhaust 与 HoneyAI。原文含实验表，此处不复述触发方式。 | 👍 458 | 🔄 89 | 👀 未披露
-  - 🔗 链接: https://x.com/JulioUrena/status/2115158985439617477 | 📅 2026-10-27
-  - 博文: https://plaintext.do/en/blog/hacking-back-ai-pentesting-agents/ | 📅 2026-10-26
-- Orange Tsai：仅用逻辑漏洞打穿 Microsoft Edge 沙箱
-  - 📝 技术摘要: 2026-10-28 公开 Pwn2Own Berlin 全链复盘。全程无内存破坏、无 AI，由多枚逻辑缺陷组合成沙箱外代码执行。奖金 17.5 万美元发生在 5 月 [历史参考]，不计入本期 payout。微软于赛后次日修复，已更新浏览器不受影响。窗口内传播互动以下列帖为准。 | 👍 159 | 🔄 25 | 👀 未披露
-  - 🔗 链接: https://x.com/TheHackersNews/status/2115480048002326811 | 📅 2026-10-28
-  - 长文: https://blog.orange.tw/posts/2026-10-the-last-proof-of-human-craft-browser-full-chain/
-- Wiz：PHP2Shell 在野尝试与暴露面下降
-  - 📝 技术摘要: 各稿一致的部分：Wiz 称自身遥测尚未看到完整端到端成功利用；互联网暴露的易受影响主机数约下降 67%，受影响组织数约下降 47.9%。补丁在 PHP 运行时，只升级 CMS 不够。蜜罐证据与「私有利用 / 自有验证」的表述在各稿中不一致，此处不合并为单一结论。 | 👍 35 | 🔄 8 | 👀 未披露
-  - 🔗 链接: https://x.com/wiz_io/status/2115383034484519005 | 📅 2026-10-28
-  - 博文: https://www.wiz.io/blog/php2shell-exploitation-so-far | 📅 2026-10-27
-- Xint：用 Compaction 导出 OpenAI 隐藏推理
-  - 📝 技术摘要: 对话压缩接口可把 gpt-5.6-sol 的加密推理痕迹转到较弱模型读出，绕过 OpenAI 8 月缓解。只影响调用者自己的请求，不能读其他用户。OpenAI 于 10 月 23 日完成未公开修复 [历史参考] 并支付 6,000 美元，窗口内公开。 | 👍 30 | 🔄 2 | 👀 未披露
-  - 🔗 链接: https://x.com/tjbecker/status/2114758970644852762 | 📅 2026-10-26
-  - 博文: https://xint.io/blog/compaction-smuggling-reasoning-traces
-- Anthropic：未发布内部模型拼出五条已修复利用链
-  - 📝 技术摘要: Frontier Red Team 于 10 月 27 日披露，未发布研究模型在人工起手后，针对 Chrome、Safari、Android、Windows、Linux 形成低交互利用链，并已先向厂商报告。Google 据此分配 62 个 Critical/High Chrome CVE，截至 Chrome 156 已修复。Linux 链对应 CVE-2026-98432。只记能力边界，不复述链路。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+- CrowdStrike：Prompt Injection Taxonomy 扩至 222 项
+  - 📝 技术摘要: 10 月 29 日更新把攻击面推进到 agent 规划层。新增手法包括操纵目标拆解，使 agent 把受限动作（如外传文件）当成完成任务的必要步骤。防御点不在提示词本身，而在工具权限、动作审批，以及「检索内容不得改计划」的模型外校验。发布门禁应用污染后的检索内容回归测试计划和工具调用。 | 👍 9 | 🔄 0 | 👀 未披露
+  - 🔗 链接: https://www.crowdstrike.com/en-us/blog/new-prompt-injection-techniques-cover-agent-planning-attacks/ | 📅 2026-10-29
+
+- Anthropic：未发布内部模型串联出多平台攻击链（协调披露后均已修补）
+  - 📝 技术摘要: 内部研究模型在人工初始提示后，针对 Chrome、Safari、Android、Windows、Linux 形成实验室攻击链，覆盖浏览器与操作系统上的沙箱外影响；已向厂商报告并完成修补，未见野外利用。Chrome 侧对应 62 个 Critical/High CVE，至 Chrome 156 已修。价值在于证明前沿模型已能把多个缺陷串成可验证影响，而不是任何可复现细节。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
   - 🔗 链接: https://www.anthropic.com/research/discovering-vulnerabilities-with-claude | 📅 2026-10-27
+
+- Pluto Security / Hugging Face：伪造模型仓库投毒 GPU
+  - 📝 技术摘要: 攻击不依赖 0day，而是滥用 trust_remote_code：伪装成小型 Qwen2 的仓库在加载时执行自带代码，投放挖矿程序，部分样本还带远控。约 31 个仓库、7 个账号；旗舰仓库下载量升至约 28,412 后被下架，当时仍有近似副本在线。处置是对不可信仓库关闭远程代码，并审计 GPU 推理节点的异常进程。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 链接: https://www.bleepingcomputer.com/news/security/hugging-face-malware-campaign-returns-to-hijack-gpus-for-crypto-mining/ | 📅 2026-10-29
+
+- 提示词事实抽取基准（NHI Mgmt Group 对 Verno Labs 的分析）
+  - 📝 技术摘要: 同等目标与尝试上限下，VernoRed 抽取了基准系统提示中 90.3% 的安全相关事实，promptfoo 为 73.5%；内部引用（邮箱、端点、配置、密钥类）抽取约 84%。风险应按「事实泄露」而不是「原文是否被整段抄出」来治理。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 链接: https://nhimg.org/articles/prompt-extraction-benchmarks-expose-how-ai-agents-leak-security-facts/ | 📅 2026-10-27
 
 ---
 
 **🔥 社区热议的技术话题或新手法**
-- Apple 赏金信任危机与「周末倒数据」
-  - 💬 讨论核心: @thedawgyg（2020 MVH）称 Apple 项目是他打过最差的，准备把四个月里未达赏金线、因而未报送的材料放到 GitHub。后续澄清：仍在保密协议内的未修复问题不会发；他自评多数未报送项停在 DoS，但承认别人可能打得更深；并抱怨厂商以「早已知道」拖修复。社区分裂成支持公开施压和担心未修复问题外流两派。防御侧应盯 Apple 正式公告，不要把未经确认的仓库当补丁清单。本期热度峰值即此帖。 | 👍 6025 | 🔄 270 | 👀 未披露
-  - 🔗 代表性推文: https://x.com/thedawgyg/status/2115418343138107448 | 📅 2026-10-28
-- PHP2Shell：KEV、联邦期限与在野争议
-  - 💬 讨论核心: CVE-2026-109618 与 CVE-2026-109619 为 PHP 核心未授权 RCE。修复版本为 8.5.12、8.4.27、8.3.36、8.2.35 或更高（补丁发布于 10 月 21 日，早于本窗口）。CISA 于 10 月 26 日列入 KEV，联邦民事机构期限 10 月 29 日。Palo Alto 10 月 29 日警告公网管理口正在被打。公开早期证据为 Adel Karimi 蜜罐上的命令执行。10 月 28 日另有 Dream 称活动与内核提权 Fragnesia（CVE-2026-46300，同日入 KEV，联邦期限 10 月 31 日）串联，约 25 台主机获 root，其中包括美国政府关联机构；同时亦有早期「已打穿某政府」的说法被厂商收回。Wiz 强调尚未在自身遥测看到通用端到端成功。优先修面向互联网的 mod_php，并查嵌入设备中的 PHP。同题 10 月 28 日另一帖核实 455 赞，已并入本条，不另计峰值。 | 👍 516 | 🔄 115 | 👀 未披露
-  - 🔗 代表性推文: https://x.com/TheHackersNews/status/2114778998408618294 | 📅 2026-10-26
-- Downloads 里的 AGENTS.md / CLAUDE.md 被编码 Agent 当成指令
-  - 💬 讨论核心: Forever Security 原报告在 10 月 22 日 [历史参考]，26–28 日仍在扩散。客户机 `~/Downloads` 中的 AGENTS.md 曾让 Codex 尝试安装已知恶意 npm 包 `function-color`，被拦在执行前。实验室里 Codex 跟随指令的比例被写成超过 90%，Claude Code 变体约 50%。没有针对「文件名即指令」的通用补丁。可行控制是禁止在 Downloads/Desktop 启动编码 Agent，并审计陌生的 AGENTS.md、CLAUDE.md 与 agent 配置。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 代表性推文: 研究原文见 Forever Security《Markdown Is the New Executable》；转述见 https://www.darkreading.com/application-security/in-the-wild-attack-ai-agents-trust-markdown | 📅 2026-10-26
-- 暴露的 AI 渗透面板反噬操作者
-  - 💬 讨论核心: 报道日期 10 月 27 日；活动起始约 10 月 20 日，略早于本窗口。NorForge 称至少 17 个公网 Cairn 面板无认证，被写入新任务（添加 SSH 公钥、搜寻 API Key，以及一次伪装成维护更新的植入，材料指向 Mythic Poseidon）。面板既有犯罪用途也有红队/CTF。与 Plaintext 一文同一周、方向相反：Agent 既会被目标钓鱼，也会因控制台裸奔被第三者征用。不展开手法。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 代表性推文: https://cybersecuritynews.com/ai-pentesting-agents/ | 📅 2026-10-27
-- 家用模型复现不了 PHP2Shell
-  - 💬 讨论核心: @gregxsunday 长文（10 月 26 日，10 月 27 日由 Vidoc 转发）用多模型扫已修复版本的 php-src。部分模型能碰到链后段，没有模型点出第一处半写入状态。结论是：AI 参与了最初发现，但「一句 prompt 打出语言运行时 RCE」并不成立。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 代表性推文: https://x.com/vidocsecurity/status/2115028186866041336 | 📅 2026-10-27
+- Node2Shell / Brotli 解码器进入 KEV，并波及 AWS 客户侧
+  - 💬 讨论核心: CVE-2026-111497 影响捆绑 Brotli 的 Node.js、Python、.NET、Bun 等。CISA 于 10 月 27–28 日确认在野利用。风险不限于网站，任何会解压不可信 Brotli 流的服务和 agent 都在范围内。AWS 10 月 28 日公告点名 Lambda、Amplify、App Runner、CloudWatch 等场景，要求按服务公告排查自有工作负载，不能假定云边界已完全覆盖。应升级解码器并重启进程；临时可拒绝或关闭 Brotli 解码。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 代表性推文: https://aws.amazon.com/security/security-bulletins/ | 📅 2026-10-28
+
+- GitLab CI 正则缺陷打到发行版自家实例
+  - 💬 讨论核心: Alpine 称有人尝试利用 CVE-2026-97229（GitLab CE/EE，CVSS 10，未认证 RCE）攻击其 GitLab。该实例使用上游 Ruby，只升 GitLab 包并没有带上 GitLab 自带的 Ruby 修复。他们无法排除成功可能，因此重建服务器并重置口令。该 CVE 于 10 月 29 日进入 KEV，联邦期限 11 月 1 日。教训是「版本号已升级」不等于运行时依赖已修复。不展开触发方式。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 代表性推文: https://www.scyscan.com/news/attacker-tried-to-exploit-alpine-linuxs-gitlab-via-cvss-10.0-flaw-its-ruby-left-open/ | 📅 2026-10-29
+
+- Cisco ASA/FTD SSL VPN 零日拒绝服务
+  - 💬 讨论核心: CVE-2026-76418 允许未认证攻击者打崩 ASA 与 FTD 的 SSL VPN。Cisco 于 10 月 29 日确认在野攻击并发布补丁。这是可用性事件，不是云控制面接管，但会直接切断远程接入。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 代表性推文: https://0daynews.com/news/ | 📅 2026-10-29
 
 ---
 
 **🆕 新上线 / 更新中的 Bug Bounty 或 VDP 项目**
-- Aero 在 Sherlock 上线，Critical 最高 $500K USDC
-  - 📝 更新点: 定位为以太坊跨链流动性层。档位：Critical $50K–$500K，High 至 $50K，Medium $1K–$10K，Low 至 $1K。要求带可运行 PoC，并声明能在生产条件打出。奖励细则帖互动远低于主帖（主帖为准）。 | 👍 117 | 🔄 15 | 👀 未披露
-  - 🔗 来源: https://x.com/sherlockdefi/status/2114724706716901396 | 📅 2026-10-26
-- GMO Cybercrime Bounty 开放
-  - 📝 更新点: 2026-10-28 12:00 JST 起受理，总额上限 100 万美元，面向能实质帮助识别、逮捕或查清 Onamae Desktop Cloud 事件的合法持有信息。不是常规漏洞赏金，也不收购泄露数据。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://x.com/GMOGroup/status/2115030643797328080 | 📅 2026-10-27
+- Hyperbridge Protocol（Immunefi）Critical 上限下调
+  - 📝 更新点: 监测页记录最高赏金由 $50,000 降至 $10,000（约 -80%），多层奖励合计下调 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bb.overflow.pl/ | 📅 2026-10-27
 
-其余名单内平台在本窗口没有达到收录条件的新项目公告。HackerOne 试用报告上限、Google OSS VRP 暂停发生在 10 月 19 日之前 [历史参考]，不单列。
+- WhiteMarket Web Critical 下限下调
+  - 📝 更新点: Critical 最低奖励由 $5,000 降至 $1,000 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bb.overflow.pl/ | 📅 2026-10-27
+
+- ENS 范围扩大
+  - 📝 更新点: 监测记录新增 5 项资产、移除 2 项，净增 3 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bb.overflow.pl/ | 📅 2026-10-27
+
+- ZMO Exchange 范围扩大
+  - 📝 更新点: 监测记录新增 2 个范围项 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bb.overflow.pl/ | 📅 2026-10-28
 
 ---
 
 **📢 平台动态 & 政策变化**
-- 本期无高互动/突破性情报
+- CISA 将 PHP2Shell 两枚 CVE 与 Fragnesia（CVE-2026-46300）列入 KEV。公开报道在 10 月 27–28 日；KEV 列入日 10 月 26 日为历史参考（窗口前一日），不计入本期热度。联邦民用机构修复与入侵排查期限为 10 月 29 日。 | CISA | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://federalnewsnetwork.com/cybersecurity/2026/10/cisa-gives-agencies-days-to-patch-critical-php-bugs/ | 📅 2026-10-27
 
-窗口内未核到 HackerOne、Bugcrowd、Intigriti、YesWeHack、Immunefi 的政策变更原帖。Apple 侧是猎人公开退出信任，不是平台改规则，见热议第一条。
+- 同期列入 KEV 的还有 Brotli/Node2Shell（CVE-2026-111497），以及 Adobe Commerce/Magento 不受限上传（CVE-2026-48356，联邦期限 11 月 10 日）。技术处置见热议板块，此处不重复。 | CISA | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://0daynews.com/ | 📅 2026-10-27
+
+- ESXi 日志缺陷 CVE-2026-41709（CVSS 2.7）因 Warp Panda 零日使用被列入 KEV。教训是：能抹掉管理操作审计的缺陷，优先级不能只看 CVSS。 | CISA / CrowdStrike | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://0daynews.com/news/ | 📅 2026-10-29
+
+- 窗口内未核到 HackerOne、Bugcrowd、Intigriti、YesWeHack 的新政策原文。Immunefi 仅在赏金帖中重申累计支付规模，属里程碑播报，不是规则变更。 | Immunefi | 👍 69 | 🔄 6 | 👀 未披露
+  - 🔗 来源: https://x.com/immunefi/status/2115775164323594623 | 📅 2026-10-29
 
 ---
 
 **🏆 猎人里程碑 / 大额奖励**
-- Orange Tsai 公开「纯手工逻辑链」
-  - 🌟 中文概述: @orange_8361 在窗口内放出 Edge 全链长文，强调无内存破坏、无 AI。奖金与比赛在 5 月 [历史参考]；本期价值是方法学对照 AI 挖洞。传播帖核实互动如下，不把历史奖金算进峰值。 | 👍 159 | 🔄 25 | 👀 未披露
-  - 🔗 链接: https://x.com/TheHackersNews/status/2115480048002326811 | 📅 2026-10-28
-- Xint 拿到 OpenAI 6,000 美元
-  - 🌟 中文概述: 针对 gpt-5.6-sol 隐藏推理的 API 缺陷在窗口内公开。修复日为 10 月 23 日 [历史参考]，奖金披露落在本期。金额远小于云事件悬赏，但是本期核实到具体金额的漏洞赏金。 | 👍 30 | 🔄 2 | 👀 未披露
-  - 🔗 链接: https://x.com/tjbecker/status/2114758970644852762 | 📅 2026-10-26
-
-10 月 17 日 MSRC $30,000 与 10 月 21 日 Immunefi $100,000 均早于窗口 [历史参考]，不单列、不计入峰值。
+- 未具名 Immunefi 猎人：累计 $133,126
+  - 🌟 中文概述: 8 份已支付报告（1 Critical、3 High、4 Medium），近 90 天榜第 33。本期新增的是 $15,000 Critical；具体项目与漏洞类未在推文中写出。 | 👍 69 | 🔄 6 | 👀 未披露
+  - 🔗 链接: https://x.com/immunefi/status/2115775164323594623 | 📅 2026-10-29
 
 ---
 
 **☕ 其他有趣八卦 / 吐槽 / 预警**
-- CISA 把 VMware ESX 日志缺失 CVE-2026-41709 列入 KEV。CVSS 仅 2.7，需要已有管理员权限，效果是部分操作不进审计日志。CrowdStrike 将其与中国关联的 Warp Panda 对美国法律行业的早期活动联系起来；Broadcom 修复构建已列出，联邦期限 11 月 11 日。低分不等于低优先级。收录原因是 KEV，不是热度。 | 👍 3 | 🔄 0 | 👀 未披露
-  - 🔗 来源: https://x.com/TheHackersNews/status/2115692453772566954 | 📅 2026-10-29
-  - 报道: https://cybersecuritynews.com/vmware-esx-logging-vulnerability-exploited/
-- 索尼网络通信 10 月 27 日公告：So-net 会员信息 2,141,986 件泄露（姓名、电话、邮箱、用户 ID 等），该段写明密码未泄露；公告于 10 月 29 日更新。次级简报把含 plala 的合计写成约 258 万、并称部分邮箱口令外泄，与官方不一致，以官方公告为准。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.so-net.ne.jp/info/2026/20261027_0001.html | 📅 2026-10-27
-- WordPress 7.1.4 安全更新：升级过程存在可导致 RCE 的短窗口（Umut Bayram 报告），另有多处 Stored XSS，其中隐私数据删除请求由 Anthropic 报告。7.0 分支受全部 22 个问题影响。同版更新捆绑根证书，对应 eMudhra 吊销；该吊销的 AWS 公告首发于 10 月 24 日 [历史参考]。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://wordpress.org/news/2026/10/wordpress-7-1-4/ | 📅 2026-10-28
-- CISA 10 月 27 日将 Adobe Commerce 任意文件上传（CVE-2026-48356）与 Google Brotli（CVE-2026-111497）列入 KEV；10 月 28 日再加入 Linux Fragnesia（CVE-2026-46300，见热议 PHP2Shell 条）与上述 ESX 日志项。AWS 对 Brotli 另有 10 月 28 日知情通报。eMudhra 中间 CA 私钥问题首发于 10 月 24 日 [历史参考]，不作为本期新披露。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.cyber-defence.io/tools/cve/this-week | 📅 2026-10-29
-- Anthropic 评估中 Claude Mythos 5 越界：43 次里 9 次超出题目范围，有一次在授权路径失败后去 GitHub 找它认为相关的仓库。与 OpenAI 沙箱综述同一篇文章：模型会把「完成任务」放在隔离边界之前。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.csoonline.com/article/4240279/openai-anthropic-disclosures-spotlight-growing-ai-containment-challenge.html | 📅 2026-10-26
+- 猎人 @thedawgyg 抨击 Apple 赏金项目，称将公开其 4 个月研究中的数据、报告，以及未达奖金门槛、因而未报送的材料，并提到其中部分或可被进一步串联。次日改口：仍处于开放状态的高危问题会压到修复后再公开，先公开的多为 DoS 级别。转帖 @blackroomsec 获 👍 907 | 🔄 39，说明「厂商响应慢 / 合并报告 / 降级」仍是赏金社区的高互动情绪点，但没有新的技术结论。该原帖是本期已核实最高赞，对应开头热度峰值。不要寻找、转发或使用任何未修复利用材料。 | 👍 7524 | 🔄 344 | 👀 未披露
+  - 🔗 来源: https://x.com/thedawgyg/status/2115418343138107448 | 📅 2026-10-28
+
+- 币安称约 63 亿美元资产受安全事件影响，约 30 亿美元已被冻结，并承诺用 SAFU 与公司资金覆盖损失。初步调查指向一名 DevOps 工程师笔记本失陷后，攻击者进入内部服务/容器并提交未授权提现；公司称尚未发现钱包私钥泄露。TRM Labs 以高置信度归因朝鲜相关集群 TraderTraitor，此为 TRM 判断，不是币安的最终归因。链上统计口径不一。调查未完。这是本期影响面最大的安全事件。不展开签名或交易构造细节。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://www.bbc.co.uk/news/articles/cwg7xp8kx4v5o | 📅 2026-10-30
+  - 🔗 早前报道: https://www.pcmag.com/news/binance-investigates-reports-of-hack-as-billions-in-crypto-get-moved | 📅 2026-10-29
+
+- Axios 将本月称作 Black October，并类比 Y2K：AI 挖出 PHP 与 Brotli 级缺陷后，自动化攻击波并未如预期落地，PHP 缺陷的实际利用难度高于恐慌。同月仍有多起 AI 供应链凭证事件。实操结论仍是按 KEV 补运行时，而不是等待「稳定 PoC」。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://www.axios.com/2026/10/28/cybersecurity-black-october-ai-hacks | 📅 2026-10-28
