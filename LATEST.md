@@ -1,15 +1,15 @@
 **【CyberSec 情报速报 | 云安全 & AI 重点强化】**
 
-> 生成时间: 2026-11-20 16:27:51 UTC+08:00
+> 生成时间: 2026-11-21 16:13:27 UTC+08:00
 
-**统计范围**: 2026-11-17 - 2026-11-20（包含起止日，共约 3-4 天数据）
-**本期热度峰值**: 最高 👍 3629 | 最高 👀 1200k
-**今日情报眼**: Java4Shell认证前RCE居首
+**统计范围**: 2026-11-18 - 2026-11-21（包含起止日，共约 3-4 天数据）
+**本期热度峰值**: 最高 👍 2058 | 最高 👀 未披露
+**今日情报眼**: NGINX HTTP/2未授权RCE披露
 
 ---
 
 **📋 生成说明**
-本报告由 AI 自动汇总公开社交媒体情报，技术细节未经人工验证，仅供参考。互动数据取各份明确给出的最大值，缺失标「未披露」，不推算。利用步骤、Payload 与 PoC 不转载。
+本报告合并窗口内可追溯的公开信息，技术细节未经人工验证，仅供参考。互动数据只采用来源明确给出的数值，缺失标注“未披露”，不推算。浏览量均未披露。窗口外背景标为“历史参考”，不计入本期热度峰值。不收录利用步骤或 PoC。
 
 ---
 
@@ -17,102 +17,91 @@
 本期无高互动/突破性情报
 
 **☁️ 云安全重点(特别加强板块)**
-- Java4Shell（CVE-2026-114938）：OpenJDK Base64 解码内存破坏，特定 x86-64（AVX-512 VBMI）上可致未认证 RCE
-  - 🌟 亮点总结: 11 月 17 日协调披露，Calif 侧帖为本期点赞最高。仅影响具备相应指令集的 Java 17/21/25/27；ARM 及不具备 AVX-512 VBMI 的环境不受影响。研究者称借助 AI 约 1 小时发现、再约 2 小时做出可用利用，token 成本不足 200 美元；已在 Keycloak、Jira、Confluence、Jenkins、Artifactory、PingFederate 等默认配置上演示登录前代码执行，但没有一条通用链打穿全部产品。Oracle CVSS 3.1 为 8.1，发现方 CVSS 4.0 为 9.2。修复已于 11 月 17 日发布，修复线包括 17.0.21.1、21.0.13.1、25.0.5.1；Keycloak 已更换含修复 JDK 的镜像。云上 Xeon Ice Lake 及更新、AMD Zen 4 及更新的 JVM，以及自带 JRE 的镜像与托管服务，需按 CPU 特性盘点、升级并重启进程。11 月 19 日起已有探测；CISA 已发紧急修补提示，窗口内公开报告尚无确认在野利用进入 KEV。Atlassian Cloud 侧厂商称客户无需自行操作。武器化利用链未公开，厂商另有临时缓解参数。 | 👍 3629 | 🔄 352 | 👀 未披露
-  - 🔗 来源: https://x.com/calif_io/status/2122724367654334810 | 📅 2026-11-17
-
-- NGINX HTTP/2 内存破坏（CVE-2026-123007 / CVE-2026-123633 等，NGINX2Shell / NGINX2Root）
-  - 🌟 亮点总结: Wiz、Xint、Rapid7、Ikotas、Metnir 等独立发现，F5 于 11 月 18 日协调修补。优先处理 CVE-2026-123007：开启 HTTP/2 即可触及，公开研究称可在 worker 执行代码，静态文件服务亦可到达，且该问题自 2015 年即存在；其余缺陷还依赖 proxy_pass、HTTP/3 或 mail proxy。开源修复为 stable 1.30.7 或 mainline 1.31.9；reload 不替换正在运行的二进制，必须重启或做 binary upgrade。NGINX Plus R34–R36 无对应修复，应迁到已修复的 37.x。Cloudflare 称研究方曾对 AWS、GCP、Azure 上的实例做远程验证；Censys 曾统计约 880 万服务版本落在受影响区间且开启 HTTP/2。Wiz 明确使用了模型辅助验证。有讨论涉及结合未修复内核问题尝试提权并穿越容器边界，路径不转载。云上反向代理、API 网关、Ingress、OpenResty 与自建镜像暴露面大。 | 👍 2028 | 🔄 414 | 👀 未披露
+- NGINX HTTP/2 未认证 RCE（CVE-2026-123633、CVE-2026-123007）
+  - 🌟 亮点总结: Wiz、Xint、Rapid7 等独立发现两处存在多年的 HTTP/2 内存安全缺陷；启用 HTTP/2 时，反向代理（含 proxy_pass）与纯静态文件场景均可未认证 RCE。NGINX 广泛用于云 Ingress、负载均衡与反向代理，单点失陷可波及下游服务。F5 已在窗口内发布修复。建议优先清点云与 Kubernetes 的 HTTP/2 暴露面并升级；无法立即升级时，公开缓解为关闭可达监听上的 HTTP/2 并确认旧 worker 退出。不提供利用细节。 | 👍 2058 | 🔄 419 | 👀 未披露
   - 🔗 来源: https://x.com/nirohfeld/status/2123070394227663006 | 📅 2026-11-18
 
-- Microsoft agent-framework 1.26.1 / 1.26.2 PyPI 投毒，窃取云与 CI 凭证（MAL-2026-20101）
-  - 🌟 亮点总结: 2026-11-17 约 20:35–21:30 UTC，官方包被植入未授权版本，窗口不足一小时后被隔离；最后干净版本为 1.26.0，包月下载量约 19 万。载荷经 .pth 在 Python 启动时执行，不必 import。收集名称含 TOKEN、SECRET、AZURE、AWS、GITHUB 等的环境变量、凭证文件及其他进程环境，并尝试获取 Azure CLI、托管身份、Azure DevOps 与 GitHub Actions OIDC 令牌后外传。Wiz 称发布权限疑似来自微软发布流水线证书，有限日志中见到成功回传，总量未知。卸载本身也可能再次触发。装过这两个版本的开发机、CI runner 或镜像应按已失陷处理：隔离、按厂商建议清理，并轮换云身份、CI 与仓库凭据。参见 GHSA-764m-3ppc-5m73。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.wiz.io/blog/malicious-version-of-microsofts-agent-framework-published-to-pypi | 📅 2026-11-17
+- VMware vCenter 认证绕过（CVE-2026-123890）
+  - 🌟 亮点总结: VMSA-2026-0009 将 vCenter Directory Service 认证绕过评为 CVSS 9.8；网络可达即可未授权访问，厂商称无 workaround，且这不是 VM escape。修复版本包括 8.0 U3m、9.0.2.0200、9.1.1.0200 与 VCF 5.2.5；7.0 无公开补丁。约 11-19 出补丁，11-20 进入 CISA KEV。有来源称疑似 9 月起在野利用，该利用时段为历史参考，不计入本期热度。应优先修补并排查异常 SSO 管理员会话。 | 👍 846 | 🔄 220 | 👀 未披露
+  - 🔗 来源: https://x.com/TheHackersNews/status/2123438652575608980 | 📅 2026-11-19
 
-- LiteLLM CVE-2026-40217 进入 CISA KEV，AI 网关凭证边界被打穿
-  - 🌟 亮点总结: CISA 于 2026-11-18 列入 KEV，联邦期限 2026-12-02。问题在自定义 guardrail 测试接口的沙箱，调用方可在代理进程内执行代码；默认容器镜像以 root 运行。厂商称默认配置需要 proxy-admin 凭证。另有分析把「虚拟密钥提权为管理密钥」算作相邻、已在更高版本修复的另一个缺陷，二者不要混成同一个 CVE。应升到同时覆盖两处修复的当前版本，并轮换代理管理密钥。逃逸手法不转载。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.tuskira.ai/advisories/cve-2026-40217 | 📅 2026-11-18
+- Linux KVM 客户机访问宿主机内存（CVE-2026-99312）
+  - 🌟 亮点总结: AMD 主机且嵌套虚拟化开启时，访客虚拟机可读写宿主机物理内存；研究人员称已在云环境观察到大量宿主机内存被读取。属多租户隔离失效。相关内核版本已有修复；无法立即修补时可关闭嵌套虚拟化以降低暴露。不展开利用步骤。 | 👍 630 | 🔄 147 | 👀 未披露
+  - 🔗 来源: https://x.com/TheHackersNews/status/2123756236520976743 | 📅 2026-11-20
 
-- DirtyFrag / Fragnesia：容器内本地提权，GKE 覆盖范围未在官方页核全
-  - 🌟 亮点总结: CVE-2026-43284 与 CVE-2026-43500 为 Linux 内核本地提权，聚合源称为 DirtyFrag，并称容器内低权限用户可打到节点 root。CVE-2026-46300（Fragnesia）被同一聚合源标为影响 GKE Standard 的 Ubuntu 节点，并称 Autopilot、GKE Sandbox 与 COS 节点不在该条范围内。Red Hat 已确认相关内核对 OpenShift 有影响。Google 官方全文本轮未核全，节点矩阵以云厂商公告为准。公开利用代码已出现，此处不给仓库、不给用法。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.cloudanix.com/zero/t/gcp-gke | 📅 2026-11-19
+- AWS Private CA Connector for Kubernetes 跨命名空间凭证误用（CVE-2026-130622 / CVE-2026-130623）
+  - 🌟 亮点总结: aws-privateca-issuer 在凭证加载上存在授权缺陷。具备创建命名空间级 Issuer 权限的用户，可能引用其他命名空间 Secret，或回退到控制器身份，从而签发含下级 CA 在内的证书。影响 EKS 附加组件，属于云原生证书信任链风险。官方已发布 1.12.0；升级前需调整依赖控制器身份的 Issuer。社交互动低，但是窗口内云安全披露。 | 👍 1 | 🔄 0 | 👀 未披露
+  - 🔗 来源: https://x.com/UpwindMDR/status/2123709503199760739 | 📅 2026-11-20
+
+- LiteLLM 代理沙箱逃逸进入 KEV（CVE-2026-40217）
+  - 🌟 亮点总结: 11-18 列入 CISA KEV 的 AI 网关问题。持有管理凭据者可在自定义代码测试/守卫栏接口逃出沙箱；默认容器中进程为 root，有限推理密钥可能被抬升为管理面控制。公开建议升级到 1.83.11 或更高，收缩管理接口并轮换密钥。联邦修复期限为 2026-12-02。互动数据未披露。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://x.com/cloudsa/status/2123801277343920390 | 📅 2026-11-20
 
 **📚 最值得读的 Writeup / 公开报告**
-- Java4Shell 官方技术说明（Calif）
-  - 📝 技术摘要: 问题位于 HotSpot 在特定 AVX-512 路径上的 Base64 解码，畸形填充可导致堆越界写；Java 层随后才抛异常，因此错误响应不代表内存未被改写。影响面取决于 JDK 版本、CPU 特性以及不可信 Base64 是否到达解码器。厂商已给修复版本与临时缓解参数。产品级利用链被扣留，仅有触发缺陷的有界复现公开，步骤不转载。 | 👍 2668 | 🔄 693 | 👀 未披露
-  - 🔗 链接: https://x.com/calif_io/status/2122799880221687837 | 📅 2026-11-17
+- Wiz：NGINX HTTP/2 未认证 RCE 技术说明
+  - 📝 技术摘要: 公开分析确认两处均需 HTTP/2 的内存安全问题可导致未认证代码执行，分别涉及反向代理连接处理与静态服务路径。修复版本已发布。云环境应同时检查 Ingress 控制器与设备内嵌 NGINX，而不能只看版本号。无法立即升级时，可临时关闭可达监听上的 HTTP/2。不复述内存破坏细节或利用步骤。 | 👍 2058 | 🔄 419 | 👀 未披露
+  - 🔗 链接: https://www.wiz.io/blog/nginx-http2-rce-vulnerabilities | 📅 2026-11-18
 
-- FrontierBreach：企业 Agent 间接 Prompt Injection 基准
-  - 📝 技术摘要: PromptArmor 于 11 月 18 日发布。原始 21 个模型按「每案最多五次、一次成功即计成功」统计，平均攻击成功率 34.9%；Gemini 4 Argon 4.3%，Grok 4.5 达 91.4%。后加的 Gemini 4 Carbon 为 2.4%，不能并进原平均分母。第三方 skills 约 45.5%，高于邮件、文档和本地文件；医疗类工作流约 44.4%。计分要求实际造成数据外带、删文件或执行攻击者代码，不是只看模型是否「听话」，也不是生产流量的自然发生率。结论是模型加固不够，Agent 权限必须与不可信内容隔离。注入样本不转载。 | 👍 1494 | 🔄 159 | 👀 1200k
-  - 🔗 链接: https://x.com/PromptArmor/status/2123114516498252054 | 📅 2026-11-18
+- KVM 客户机到宿主机内存访问研究说明
+  - 📝 技术摘要: 说明 AMD 嵌套虚拟化条件下访客可触及宿主机内存的影响、云环境验证现象，以及内核修复版本与临时缓解（关闭 nested）。聚焦隔离失效后果与处置，不展开利用步骤。 | 👍 252 | 🔄 33 | 👀 未披露
+  - 🔗 链接: https://x.com/orenyomtov/status/2123505171028115511 | 📅 2026-11-19
 
-- Wiz：NGINX HTTP/2 RCE 技术说明
-  - 📝 技术摘要: 两条独立内存安全问题，均要求 HTTP/2。一条在连接槽紧张时出现 use-after-free，主要影响带 proxy_pass 的反向代理；另一条是流控计数问题，静态文件服务亦可到达。修复后必须重启 master，仅 reload 不够；无法立即升级时应关闭 HTTP/2。价值在于 ingress 与边缘代理往往不在应用仓库的依赖扫描里。利用步骤不转载。 | 👍 30 | 🔄 13 | 👀 未披露
-  - 🔗 链接: https://x.com/wiz_io/status/2123072698758611002 | 📅 2026-11-18
+- OpenJDK Java4Shell 补丁跟踪（CVE-2026-114938）
+  - 📝 技术摘要: OpenJDK AVX-512 Base64 解码存在堆内存破坏，特定 Java 服务在 x86-64 上可能被预认证影响；ARM 与标准 Java 8/11 不受影响。优先升级到 17.0.21.1、21.0.13.1、25.0.5.1、27.0.1.1 及对应厂商构建。首次披露在 11-17，属历史参考；窗口内为补丁跟踪，不记为本期新 0day。不描述触发条件或 PoC。 | 👍 56 | 🔄 11 | 👀 未披露
+  - 🔗 链接: https://x.com/Dinosn/status/2122884566734008446 | 📅 2026-11-18
 
-- Wiz / 社区对 agent-framework 恶意版本的拆解
-  - 📝 技术摘要: 确认 1.26.1/1.26.2 为供应链投毒，干净线停在 1.26.0。攻击者重打包合法 wheel 并加入启动钩子，恶意版本仍依赖正常 core 包，因此功能看起来正常。覆盖 Azure、AWS、GitHub、OpenAI 等关键字环境变量及 IMDS/OIDC 端点。影响面是安装过这两个版本的主机与 CI，而不是所有用户。卸载行为本身也可能再次触发，处置应以「主机已失陷 + 全量轮换」为准。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 链接: https://www.wiz.io/blog/malicious-version-of-microsofts-agent-framework-published-to-pypi | 📅 2026-11-17
+- ARTEX 后续公开报道［历史参考］
+  - 📝 技术摘要: 11-20 报道延续此前 Amazon/FBI 警告：攻击者借助代理式测试框架寻找暴露的 AI 应用和长期密钥，并用窃得的推理额度继续狩猎。活动主体在窗口前，不计入本期热度峰值。防御重点是收回长期 AI 密钥、清点暴露网关。不介绍工具用法。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 链接: https://cybersecuritynews.com/hackers-use-ai-powered-artex-framework/ | 📅 2026-11-20
 
 **🔥 社区热议的技术话题或新手法**
-- AI 把 Critical 漏洞发现成本打到小时级与百美元级
-  - 💬 讨论核心: Java4Shell 与 NGINX 两条线都出现「模型辅助发现/验证」的公开说法。社区分歧在于：这是防御方必须同样自动化的信号，还是会进一步淹没补丁能力。共识是模型硬化不够，云身份、短凭证和暴露面收缩仍是主防线。 | 👍 3262 | 🔄 449 | 👀 未披露
-  - 🔗 代表性推文: https://x.com/IntCyberDigest/status/2122802633056416195 | 📅 2026-11-17
+- NGINX HTTP/2 RCE 暴露面与 AI 加速发现
+  - 💬 讨论核心: 社区强调“版本受影响不等于可被利用”，还需编译 HTTP/2 且监听实际启用；云与容器中的 Ingress、设备内嵌实例比公网版本更难清点。同时关注研究方在数日内定位并验证该类内存问题，补丁窗口被压缩。共识是尽快升级，临时缓解为关闭 HTTP/2，并把网关与运行时补丁时效视同应用代码。不讨论可复制利用手法。 | 👍 2058 | 🔄 419 | 👀 未披露
+  - 🔗 代表性推文: https://x.com/nirohfeld/status/2123070394227663006 | 📅 2026-11-18
 
-- FrontierBreach / 企业 Agent 间接 Prompt Injection
-  - 💬 讨论核心: 本期浏览量峰值所在事件。社区关注点是现有基准偏低、skills 比邮件/文档更有效、医疗类工作流成功率更高（约 44.4%）。共识偏向纵深防御：不可信内容不能直接驱动有副作用的工具，而不是指望模型单独挡住注入。所选攻击集上的成功率不是生产自然发生率。 | 👍 1494 | 🔄 159 | 👀 1200k
+- FrontierBreach：企业 Agent 间接 Prompt Injection 基准
+  - 💬 讨论核心: PromptArmor 发布面向企业工作流的间接注入评测。跨约 21 个模型，平均攻击成功率约 34.9%；第三方 skills 入口约 45.5%，医疗场景约 44.4%。Gemini 4 Argon 相对较低（约 4.3%），部分模型显著更高。讨论强调不能只靠模型对齐，须对邮件、文档、skills 等不可信输入做纵深控制。 | 👍 1690 | 🔄 161 | 👀 未披露
   - 🔗 代表性推文: https://x.com/PromptArmor/status/2123114516498252054 | 📅 2026-11-18
 
-- AWS 允许编码代理发起账号注册并回传短期凭证
-  - 💬 讨论核心: 11 月 17 日 AWS 宣布 agentic coding harness 可打开注册流程并拿回短期凭证。云安全研究者指出「影子账号」会更常见。互动不高，但与云身份治理直接相关。 | 👍 10 | 🔄 3 | 👀 未披露
-  - 🔗 代表性推文: https://x.com/0xdabbad00/status/2123149620062859550 | 📅 2026-11-18
+- 管理平面与虚拟化隔离集中告急
+  - 💬 讨论核心: vCenter 认证绕过进入修补与 KEV、KVM 租户隔离问题，以及多条 KEV 新增同时出现。讨论焦点是优先修补管理面、虚拟化宿主机和 AI 网关，而不是只看业务应用漏洞。 | 👍 846 | 🔄 220 | 👀 未披露
+  - 🔗 代表性推文: https://x.com/TheHackersNews/status/2123438652575608980 | 📅 2026-11-19
 
-- Java 运行时成为云工作负载的统一打击面
-  - 💬 讨论核心: Java4Shell 不在应用代码里，而在 JVM。同一 CVE 可同时打到自建中间件、云托管节点和捆绑 JRE 的镜像。讨论重点是先确认 CPU 特性与 JDK 构建，再滚动重启，而不是只看 CVE 是否出现在依赖清单。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 代表性推文: https://www.securityweek.com/java4shell-exploitation-attempts-begin-as-vendors-rush-out-advisories/ | 📅 2026-11-19
+- AI 代理批量提交赏金报告
+  - 💬 讨论核心: 有猎人描述分拣侧上午收到同一提交者数十份“全是 Critical”的报告，并质疑把提交按钮交给代理。窗口内讨论指向无效报告噪声上升，未见平台官方政策原文。 | 👍 66 | 🔄 4 | 👀 未披露
+  - 🔗 代表性推文: https://x.com/mdp_sec/status/2123252715136651264 | 📅 2026-11-19
 
-- 云工作负载漏洞堆积 vs 长生命周期 AI 密钥
-  - 💬 讨论核心: [历史参考] 报告本体发布于 2026-11-10，窗口内仍有解读，不计入本期热度峰值。核心结论是 AI 加快了熟悉风险而非创造全新类别：高/严重漏洞中位数从约 4 升至约 16；使用 Gemini 的组织中近半数依赖长生命周期 API key，Bedrock 也有相当比例；Azure Foundry 默认长生命周期密钥且绝大多数组织未改。对云安全的直接含义是短生命周期身份、数据边界与密钥轮换优先于再买一个 AI 安全产品。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 代表性推文: https://www.datadoghq.com/state-of-cloud-security/ | 📅 2026-11-18
+- Argo CD ApplicationSet 权限绕过与密钥外带风险
+  - 💬 讨论核心: 非管理员在特定配置下可能绕过 SCM 允许列表并引用集群密钥。属 Kubernetes/GitOps 权限问题。处置为升级，并限制 ApplicationSet 变更权限与出口。互动较低，作为云原生补充。不展开绕过步骤。 | 👍 4 | 🔄 0 | 👀 未披露
+  - 🔗 代表性推文: https://x.com/UpwindMDR/status/2123648041185865795 | 📅 2026-11-20
 
 **🆕 新上线 / 更新中的 Bug Bounty 或 VDP 项目**
-- Quantova 在 HackenProof 上线，Critical 最高约 3000 美元
-  - 📝 更新点: 平台官方公告新项目，Critical 2000–3000 美元，High 1000 美元。 | 👍 65 | 🔄 4 | 👀 未披露
+- HackenProof 新项目 Quantova
+  - 📝 更新点: 窗口内公布的新赏金目标，Critical 最高约 $3,000。奖励档位已公开，尚无本期高额已支付案例。 | 👍 65 | 🔄 4 | 👀 未披露
   - 🔗 来源: https://x.com/HackenProof/status/2123038697276752294 | 📅 2026-11-18
 
-- 1Password Bug Bounty 出现在 Intigriti 公开索引
-  - 📝 更新点: 目录显示 11 月 17 日前后进入追踪，公开奖励上限约 3 万美元。以平台页面为准。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://bugbounty.fyi/changes | 📅 2026-11-17
+- Nord Security Managed Bug Bounty
+  - 📝 更新点: 11-18 在 Bugcrowd 上线公开项目。后续项目页显示上限约 $50,000，具体范围以平台为准。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bugbounty.fyi/changes | 📅 2026-11-18
 
-- Ticko 自托管项目增加 Critical 档，上限 20 万美元
-  - 📝 更新点: 窗口内范围与奖励档位更新，属 Web3 向新档，非传统 Web 赏金峰值。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+- Immunefi：Audit Comp | Base Everest
+  - 📝 更新点: 11-19 新公开竞赛/项目，属 Web3 审计范围。赏金与资产未在来源草稿中核到。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bugbounty.fyi/changes | 📅 2026-11-19
+
+- Inspectiv 一批新 VDP
+  - 📝 更新点: 11-19 集中上线 Shipt、Razer、Root、ShipHero、Sisense、Backlight 等公开 VDP。互动未披露，投入前需逐个核对范围。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
   - 🔗 来源: https://bugbounty.fyi/changes | 📅 2026-11-19
 
 **📢 平台动态 & 政策变化**
-- AWS Security Hub 开始统一查看 GCP 资源，与已有 Azure 覆盖并列。可发现 GCP VM、Artifact Registry 镜像、Cloud Run 与身份，并做暴露面、漏洞和 CIS GCP Foundations 检查，发现可走现有 EventBridge。这是多云态势产品更新，不是新漏洞。部分区域不能建集成。 | AWS | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://aws.amazon.com/about-aws/whats-new/2026/11/security-hub-gcp/ | 📅 2026-11-17
+- CISA KEV 在窗口内连续加入 vCenter、LiteLLM、REDCap、Apache Axis、Synology DSM、Cisco Expressway、Apache Roller 等在野利用条目。联邦修复期限多为约 3 天。其中 vCenter、LiteLLM 已在上文单列。 | CISA | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://www.immunitysec.com/vulnerabilities/kev/ | 📅 2026-11-21
 
-- CISA KEV 于 2026-11-18 扩目。同日公开摘要点名 Synology DSM、BerriAI LiteLLM、Apache Axis 1.x 与 Vanderbilt REDCap。LiteLLM CVE-2026-40217 联邦修复期限为 2026-12-02；目录描述为自定义代码测试接口上的代码执行，攻击细节未公开。处置应按各条目期限和自身暴露面排。 | CISA | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.tuskira.ai/advisories/cve-2026-40217 | 📅 2026-11-18
-
-- 多家 HackerOne 项目小幅上调 Critical/High 上限（ChromeOS、Azure SDK、Automattic 等），单条互动低，属常规调价而非政策转向 | HackerOne 等 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://bugbounty.fyi/changes | 📅 2026-11-20
-
-- OpenAI 赏金上调（核心产品 Critical 最高约 3 万美元，exceptional 含加成可达约 17 万美元）。[历史参考] 公告日为 2026-11-07，不计入本期热度峰值；PROMPT2PWN 线下活动为 11 月 20–21 日，末日跨出本窗口。 | OpenAI | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://smartscope.blog/en/blog/openai-security-bug-bounty-payouts-increase-up-172-2026/ | 📅 2026-11-07
+- Brave Software 在 HackerOne 暂停。该项目暂时不应作为有效目标；暂停原因来源中未核到官方说明。 | HackerOne | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bugbounty.fyi/changes | 📅 2026-11-21
 
 **🏆 猎人里程碑 / 大额奖励**
 本期无高互动/突破性情报
 
 **☕ 其他有趣八卦 / 吐槽 / 预警**
-- CISA 已就 Java4Shell 发紧急修补提示。窗口内公开报告尚无确认在野利用进入 KEV，但 GreyNoise 等已记录探测流量。优先查互联网暴露、且宿主机把 AVX-512 VBMI 透给 JVM 的 Keycloak 与 Atlassian Data Center；不要把「暂无在野」理解成可以等下一个维护窗口。 | 👍 49 | 🔄 13 | 👀 未披露
-  - 🔗 来源: https://x.com/CrowdStrike/status/2123258422925656416 | 📅 2026-11-19
-
-- vCenter CVE-2026-123890（控制台认证绕过，CVSS 9.8）在 11 月 20 日 SANS 日更中被再次点名。SANS 称 9 月已有使用（早于本窗口）。互动低，但虚拟化管理面属于云/混合云高价值目标，建议对照厂商补丁版本。利用细节不转载。 | 👍 6 | 🔄 1 | 👀 未披露
-  - 🔗 来源: https://x.com/sans_isc/status/2123597393061151195 | 📅 2026-11-20
-
-- 若构建机或 Agent 运行环境在 2026-11-17 20:35–21:30 UTC 安装过 agent-framework 1.26.1 或 1.26.2，按已失陷处理：隔离、轮换 Azure/AWS/GitHub/CI 凭证，并检查异常外联。公开简报称简单卸载可能再次触发，不要只跑一次 uninstall。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.helpnetsecurity.com/2026/11/19/microsoft-agent-framework-package-pypi-compromised/ | 📅 2026-11-19
-
-- NGINX 热修后必须替换正在运行的二进制，只 reload 配置不会消掉 nginx2root。发行版回移植可能滞后，只看 `nginx -v` 会漏掉已 backport 或仍未修复的包；包状态仍为 needed / under investigation 时，不要把「上游已发布」当成「本机已修好」。关闭 HTTP/2 是最快缓解，HTTP/3、resolver、mail proxy 路径需另看。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://blog.cloudflare.com/nginx2root/ | 📅 2026-11-20
+- 有来源称在开放目录中看到针对 NGINX HTTP/2 RCE 的尝试性工具与分析环境，目前更像准备与探测，而非已确认大规模失陷。宜把公开讨论热度当成加速打补丁的信号，而不是等待入侵证据。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://x.com/Huntio/status/2123820604763549706 | 📅 2026-11-20
