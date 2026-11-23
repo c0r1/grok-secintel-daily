@@ -120,413 +120,167 @@ def sanitize_model_output(content: str) -> str:
 
 
 def load_prompt_template(filepath: str, now: datetime) -> str:
-    """加载并填充 prompt 模板（使用统一 now，避免跨天不一致）。"""
     if not os.path.exists(filepath):
-        log(f"ERROR: prompt 模板文件不存在: {filepath}")
+        log(f"ERROR: 提示词模板文件不存在: {filepath}")
         sys.exit(1)
-
+    
     with open(filepath, "r", encoding="utf-8") as f:
-        template = f.read()
+        template_content = f.read()
 
-    log(f"加载 prompt 模板: {filepath} ({len(template)} 字符)")
+    # 计算时间窗口：报告针对前一天进行统计
+    target_date = now - timedelta(days=1)
+    date_str = target_date.strftime("%Y-%m-%d")
+    start_time = f"{date_str} 00:00:00"
+    end_time = f"{date_str} 23:59:59"
 
-    # 填充占位符（使用传入的基准时间）
-    prompt = template.replace("{{CURRENT_TIME}}", now.strftime("%Y-%m-%d %H:%M:%S"))
-    prompt = prompt.replace("{{END_DATE}}", now.strftime("%Y-%m-%d"))
-    prompt = prompt.replace(
-        "{{START_DATE}}", (now - timedelta(days=3)).strftime("%Y-%m-%d")
-    )
-    prompt = prompt.replace("{{PREVIOUS_YEAR}}", str(now.year - 1))
-
+    # 替换模板中的占位符
+    prompt = template_content.replace("{date}", date_str)
+    prompt = prompt.replace("{start_time}", start_time)
+    prompt = prompt.replace("{end_time}", end_time)
+    
     return prompt
 
 
-def extract_response_content(response: object) -> str | None:
-    if isinstance(response, str):
-        parts = []
-        saw_sse_data = False
-        for line in response.splitlines():
-            line = line.strip()
-            if not line or line.startswith(":"):
-                continue
-            if not line.startswith("data:"):
-                continue
-            saw_sse_data = True
-            payload = line[5:].strip()
-            if payload == "[DONE]":
-                break
-            try:
-                data = json.loads(payload)
-            except Exception:
-                continue
-            if not isinstance(data, dict):
-                continue
-            choices = data.get("choices")
-            if not isinstance(choices, list) or not choices:
-                continue
-            first = choices[0]
-            if not isinstance(first, dict):
-                continue
-            delta = first.get("delta")
-            if isinstance(delta, dict):
-                piece = delta.get("content")
-                if isinstance(piece, str):
-                    parts.append(piece)
-                    continue
-            message = first.get("message")
-            if isinstance(message, dict):
-                piece = message.get("content")
-                if isinstance(piece, str):
-                    parts.append(piece)
+def call_grok_api(client: OpenAI, prompt: str, temperature: float, use_web_search: bool = True) -> str:
+    messages = [{"role": "user", "content": prompt}]
+    tools = [WEB_SEARCH_TOOL] if use_web_search else []
 
-        if saw_sse_data:
-            content = sanitize_model_output("".join(parts))
-            return content or None
-        return None
+    delay = RETRY_MIN_DELAY
+    last_exception = None
 
-    choices = getattr(response, "choices", None)
-    if choices:
-        content = choices[0].message.content
-        if isinstance(content, str):
-            return sanitize_model_output(content)
-        return None
-
-    try:
-        chunks = iter(response)
-    except TypeError:
-        return None
-
-    parts = []
-    for chunk in chunks:
-        chunk_choices = getattr(chunk, "choices", None)
-        if not chunk_choices:
-            continue
-        delta = getattr(chunk_choices[0], "delta", None)
-        piece = getattr(delta, "content", None)
-        if isinstance(piece, str):
-            parts.append(piece)
-    content = sanitize_model_output("".join(parts))
-    return content or None
-
-
-def get_retry_after_seconds(error: Exception) -> float | None:
-    """Read Retry-After seconds or an HTTP date from headers or the error body."""
-    def parse_delay(value: object) -> float | None:
+    for attempt in range(MAX_RETRIES + 1):
         try:
-            return max(0.0, float(value))
-        except (TypeError, ValueError):
-            try:
-                retry_at = parsedate_to_datetime(str(value))
-            except (TypeError, ValueError, OverflowError):
-                return None
-            if retry_at.tzinfo is None:
-                retry_at = retry_at.replace(tzinfo=timezone.utc)
-            return max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
-
-    response = getattr(error, "response", None)
-    headers = getattr(response, "headers", None)
-    if headers is not None:
-        value = headers.get("retry-after")
-        if value is not None:
-            delay = parse_delay(value)
-            if delay is not None:
-                return delay
-
-    body = getattr(error, "body", None)
-    if isinstance(body, dict):
-        value = body.get("retry_after")
-        if value is None and isinstance(body.get("error"), dict):
-            value = body["error"].get("retry_after")
-        if value is not None:
-            return parse_delay(value)
-    return None
-
-
-def is_retryable_error(error: Exception) -> bool:
-    """Retry transient HTTP failures and transport errors, not permanent 4xx."""
-    status_code = getattr(error, "status_code", None)
-    if status_code is not None:
-        try:
-            status_code = int(status_code)
-        except (TypeError, ValueError):
-            return False
-        return status_code in (408, 409, 425, 429) or 500 <= status_code <= 599
-
-    return isinstance(error, (TimeoutError, ConnectionError)) or type(error).__name__ in {
-        "APIConnectionError",
-        "APITimeoutError",
-        "ConnectError",
-        "ConnectTimeout",
-        "PoolTimeout",
-        "ReadError",
-        "ReadTimeout",
-        "TimeoutException",
-        "WriteError",
-        "WriteTimeout",
-    }
-
-
-def call_with_retry(
-    client: OpenAI,
-    model: str,
-    prompt: str,
-    temperature: float,
-    label: str,
-    use_web_search: bool = True,
-    max_retries: int | None = None,
-) -> str | None:
-    """带重试的 API 调用；成功返回内容，失败返回 None。"""
-    retry_limit = MAX_RETRIES if max_retries is None else max_retries
-    next_retry_delay = None
-    for attempt in range(retry_limit + 1):
-        try:
-            if attempt == 0:
-                log(f"   {label} ...")
-            else:
-                delay = next_retry_delay
-                if delay is None:
-                    delay = random.uniform(RETRY_MIN_DELAY, RETRY_MAX_DELAY)
-                next_retry_delay = None
-                log(f"   {label} retry {attempt}/{retry_limit} (sleep {delay:.1f}s)...")
-                time.sleep(delay)
-
-            request_start = time.monotonic()
-            request_kwargs = {
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+            kwargs = {
+                "model": FAST_MODEL,
+                "messages": messages,
                 "temperature": temperature,
-                "stream": True,
+                "timeout": API_TIMEOUT,
             }
-            if use_web_search:
-                request_kwargs["extra_body"] = {"tools": [WEB_SEARCH_TOOL]}
-            response = client.chat.completions.create(**request_kwargs)
-            content = extract_response_content(response)
-            elapsed = time.monotonic() - request_start
-            if content:
-                content = content.strip()
-                log(f"   {label} ok ({elapsed:.1f}s, {len(content)} chars)")
-                return content
-            else:
-                log(f"   {label} empty response")
+            if tools:
+                kwargs["tools"] = tools
 
+            response = client.chat.completions.create(**kwargs)
+            choice = response.choices[0]
+            content = choice.message.content or ""
+            return sanitize_model_output(content)
         except Exception as e:
-            err_str = str(e)
-            # 不可恢复的 429：账户无权限，跳过重试
-            if "No available accounts" in err_str or "model tier" in err_str:
-                log(f"   {label} FATAL: 账户无此模型权限，跳过重试 — {e}")
-                return None
-            if not is_retryable_error(e):
-                log(f"   {label} FATAL: 不可重试错误，停止重试 — {e}")
-                return None
-            retry_after = get_retry_after_seconds(e)
-            if retry_after is not None:
-                next_retry_delay = retry_after
-            if attempt == retry_limit:
-                log(f"   {label} ERROR (final): {e}")
+            last_exception = e
+            log(f"API 调用失败 (尝试 {attempt + 1}/{MAX_RETRIES + 1}): {e}")
+            if attempt < MAX_RETRIES:
+                sleep_time = random.uniform(delay, min(RETRY_MAX_DELAY, delay * 1.5))
+                time.sleep(sleep_time)
+                delay *= 2
             else:
-                log(f"   {label} ERROR: {e}")
+                break
 
-    return None
-
-
-def sequential_call_grok_fast(
-    client: OpenAI,
-    prompt: str,
-    temperatures: list[float],
-) -> list[str | None]:
-    """串行调用 fast 多次。"""
-    log(f"\n调用 {FAST_MODEL} x {len(temperatures)}")
-    results = []
-
-    for i, temp in enumerate(temperatures, 1):
-        label = f"[{i}/{len(temperatures)}] temp={temp}"
-        result = call_with_retry(client, FAST_MODEL, prompt, temp, label)
-        results.append(result)
-
-    return results
+    raise RuntimeError(f"API 调用在重试 {MAX_RETRIES} 次后仍然失败: {last_exception}")
 
 
-def call_thinking_model(
-    client: OpenAI,
-    contents: list[str],
-) -> str | None:
-    """调用汇总模型审查。"""
-    log(f"\n调用 {THINKING_MODEL} 汇总")
-
-    contents_text = ""
-    for i, content in enumerate(contents, 1):
-        if len(content) > MAX_CONTENT_LENGTH:
-            content = content[:MAX_CONTENT_LENGTH] + "\n\n[内容已截断...]"
-            log(f"   WARN: 第 {i} 份内容超过 {MAX_CONTENT_LENGTH} 字符，已截断")
-        contents_text += f"【第 {i} 份内容】\n{content}\n\n---\n\n"
-
-    summary_prompt = SUMMARY_PROMPT_TEMPLATE.format(
-        n=len(contents),
-        contents=contents_text.strip(),
-    )
-
-    result = call_with_retry(
-        client,
-        THINKING_MODEL,
-        summary_prompt,
-        THINKING_TEMPERATURE,
-        "[汇总]",
-        use_web_search=False,
-        max_retries=SUMMARY_MAX_RETRIES,
-    )
-
-    return result
+def generate_drafts(client: OpenAI, base_prompt: str) -> list[str]:
+    drafts = []
+    for i, temp in enumerate(TEMPERATURES):
+        log(f"正在生成第 {i + 1}/{len(TEMPERATURES)} 份草稿 (temperature={temp})...")
+        if is_dry_run():
+            draft = f"[DRY_RUN] 模拟生成的草稿 {i + 1}，基于温度 {temp}"
+        else:
+            draft = call_grok_api(client, base_prompt, temp, use_web_search=True)
+        
+        if len(draft) > MAX_CONTENT_LENGTH:
+            draft = draft[:MAX_CONTENT_LENGTH] + "\n...(内容过长已截断)"
+        drafts.append(draft)
+    return drafts
 
 
-def save_to_file(content: str, now: datetime) -> str:
-    """保存内容到 outputs/YYYY/MM/YYYY-MM-DD.md（按传入 now）。"""
-    year = now.strftime("%Y")
-    month = now.strftime("%m")
-    date = now.strftime("%Y-%m-%d")
+def summarize_drafts(client: OpenAI, drafts: list[str]) -> str:
+    formatted_drafts = "\n\n---\n\n".join([f"### 草稿 {i+1}\n{d}" for i, d in enumerate(drafts)])
+    summary_prompt = SUMMARY_PROMPT_TEMPLATE.format(n=len(drafts), contents=formatted_drafts)
+
+    log("正在汇总所有草稿生成最终报告...")
+    if is_dry_run():
+        return f"[DRY_RUN] 模拟汇总生成的最终报告\n\n{formatted_drafts}"
+
+    delay = RETRY_MIN_DELAY
+    last_exception = None
+
+    for attempt in range(SUMMARY_MAX_RETRIES + 1):
+        try:
+            # 汇总阶段通常使用固定的思考温度，不使用 web_search 纯粹基于草稿整合
+            response = client.chat.completions.create(
+                model=THINKING_MODEL,
+                messages=[{"role": "user", "content": summary_prompt}],
+                temperature=THINKING_TEMPERATURE,
+                timeout=API_TIMEOUT,
+            )
+            choice = response.choices[0]
+            content = choice.message.content or ""
+            return sanitize_model_output(content)
+        except Exception as e:
+            last_exception = e
+            log(f"汇总 API 调用失败 (尝试 {attempt + 1}/{SUMMARY_MAX_RETRIES + 1}): {e}")
+            if attempt < SUMMARY_MAX_RETRIES:
+                sleep_time = random.uniform(delay, min(RETRY_MAX_DELAY, delay * 1.5))
+                time.sleep(sleep_time)
+                delay *= 2
+            else:
+                break
+
+    raise RuntimeError(f"汇总 API 调用在重试 {SUMMARY_MAX_RETRIES} 次后仍然失败: {last_exception}")
+
+
+def save_report(report_content: str, now: datetime) -> tuple[str, str]:
+    target_date = now - timedelta(days=1)
+    year = target_date.strftime("%Y")
+    month = target_date.strftime("%m")
+    date_str = target_date.strftime("%Y-%m-%d")
 
     output_dir = Path(OUTPUT_DIR) / year / month
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    filepath = output_dir / f"{date}.md"
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(content.rstrip() + "\n")
+    file_path = output_dir / f"{date_str}.md"
+    
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(report_content)
+    log(f"报告已成功保存至: {file_path}")
 
-    log(f"\n保存文件: {filepath}")
-    return str(filepath)
+    # 同时更新 LATEST.md
+    latest_path = Path(LATEST_REPORT_FILE)
+    with open(latest_path, "w", encoding="utf-8") as f:
+        f.write(report_content)
+    log(f"最新报告已同步更新至: {latest_path}")
 
-
-def save_latest(content: str) -> str:
-    """保存最新报告到仓库根目录，便于直接查看。"""
-    filepath = Path(LATEST_REPORT_FILE)
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(content.rstrip() + "\n")
-    log(f"保存文件: {filepath}")
-    return str(filepath)
-
-
-def inject_generated_time(content: str, now: datetime) -> str:
-    """在报告头部注入生成时间（使用 now），避免依赖模型是否复述 {{CURRENT_TIME}}。"""
-    generated_line = f"> 生成时间: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC+08:00"
-
-    lines = content.splitlines()
-    head = "\n".join(lines[:30])
-    if re.search(r"(^|\n)\s*(>|-|\*)?\s*生成时间\s*[:：]", head):
-        return content
-
-    if not lines:
-        return generated_line + "\n"
-
-    insert_at = 0
-    for idx, line in enumerate(lines):
-        if line.strip():
-            insert_at = idx + 1
-            break
-
-    out_lines = lines[:insert_at] + ["", generated_line, ""] + lines[insert_at:]
-    return "\n".join(out_lines).lstrip("\n")
+    return str(file_path), str(latest_path)
 
 
 def main() -> None:
-    run_start = time.monotonic()
-
-    # 在整个流程中统一使用同一个时间点，避免跨天边界不一致
     now = get_now()
-    report_date = now.strftime("%Y-%m-%d")
-    dry_run = is_dry_run()
+    log(f"当前执行时间 (Asia/Shanghai): {now.isoformat()}")
 
-    if dry_run:
-        log("DRY_RUN=1")
-    log(f"开始 [{now.strftime('%Y-%m-%d %H:%M:%S')} UTC+08:00]")
-
-    # 1. 加载配置
-    log("\n检查环境变量...")
-    api_key, base_url = load_env_config()
-    log("   XAI_API_KEY: [REDACTED]")
-    log("   XAI_BASE_URL: [REDACTED]")
-
-    if not dry_run:
+    if is_dry_run():
+        log("当前处于 DRY_RUN 模式，将跳过实际的 API 密钥检查和网络请求。")
+        api_key, base_url = "mock_key", "mock_url"
+        client = None
+    else:
+        api_key, base_url = load_env_config()
         if OpenAI is None:
-            log("ERROR: 依赖未安装：openai 包缺失（正常运行需要，DRY_RUN 可不安装）")
+            log("ERROR:未安装 openai 库，请先运行 pip install openai")
             sys.exit(1)
-        client = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            timeout=API_TIMEOUT,
-            max_retries=0,
-            default_headers={
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
-            },
-        )
+        client = OpenAI(api_key=api_key, base_url=base_url)
 
-    # 2. 加载 prompt 模板（传入统一的时间点）
-    log("\n检查 prompt 模板...")
-    prompt = load_prompt_template(PROMPT_TEMPLATE_FILE, now)
-    log(f"   prompt 长度: {len(prompt)} 字符")
-    log(
-        f"   窗口: {(now - timedelta(days=3)).strftime('%Y-%m-%d')}~{now.strftime('%Y-%m-%d')}"
-    )
+    # 1. 加载提示词模板
+    base_prompt = load_prompt_template(PROMPT_TEMPLATE_FILE, now)
+    log("提示词模板加载成功。")
 
-    # 3. 干跑模式：跳过 API 调用，生成模拟内容
-    if dry_run:
-        log("\nDRY_RUN：跳过 API 调用")
-        final_content = (
-            "# DRY_RUN\n\n"
-            f"- time: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC+08:00\n"
-            f"- report_date: {report_date}\n"
-            f"- window: {(now - timedelta(days=3)).strftime('%Y-%m-%d')}~{now.strftime('%Y-%m-%d')}\n"
-            f"- prompt_len: {len(prompt)}\n"
-            f"- output: {OUTPUT_DIR}/{now.strftime('%Y/%m/%Y-%m-%d')}.md\n"
-        )
+    # 2. 生成多份草稿
+    drafts = generate_drafts(client, base_prompt) if client else [
+        f"[DRY_RUN] 草稿 {i+1}" for i in range(len(TEMPERATURES))
+    ]
 
-    else:
-        # 3. 串行调用 grok-4-fast × 3
-        results = sequential_call_grok_fast(client, prompt, TEMPERATURES)
+    # 3. 汇总草稿生成最终报告
+    final_report = summarize_drafts(client, drafts) if client else "[DRY_RUN] 最终报告内容"
 
-        # 4. 检查结果（降级模式）
-        valid_results = [r for r in results if r is not None]
-        success_count = len(valid_results)
-        total_count = len(TEMPERATURES)
-
-        log(f"\n{FAST_MODEL} 结果: {success_count}/{total_count} 成功")
-
-        if success_count == 0:
-            log(f"ERROR: {FAST_MODEL} 全部失败，任务中止")
-            sys.exit(1)
-
-        # 5. 调用 thinking 模型汇总
-        final_content = call_thinking_model(client, valid_results)
-
-        if final_content is None:
-            log(f"ERROR: {THINKING_MODEL} 调用失败，任务中止")
-            sys.exit(1)
-
-    # 6. 保存到本地文件（传入统一的时间点）
-    log("\n写入输出文件...")
-    final_content = sanitize_model_output(final_content)
-    final_content = inject_generated_time(final_content, now)
-    output_path = save_to_file(final_content, now)
-    log(f"   ok: {output_path}")
-    latest_path = save_latest(final_content)
-    log(f"   ok: {latest_path}")
-
-    # 7. 输出日期供 workflow 使用（使用同一个 now，确保与文件名一致）
-    log(f"\n报告日期: {report_date}")
-    log(f"输出路径: {output_path}")
-
-    # 输出 GitHub Actions 可读取的格式
-    github_output = os.environ.get("GITHUB_OUTPUT")
-    if github_output:
-        with open(github_output, "a", encoding="utf-8") as f:
-            f.write(f"report_date={report_date}\n")
-            f.write(f"output_path={output_path}\n")
-        log("   已写入 GITHUB_OUTPUT")
-
-    # 8. 完成
-    elapsed = time.monotonic() - run_start
-    if dry_run:
-        log(f"\n完成 (DRY_RUN, {elapsed:.1f}s)")
-    else:
-        log(f"\n完成 ({elapsed:.1f}s)")
+    # 4. 保存报告
+    save_report(final_report, now)
+    log("全部流程执行完毕。")
 
 
 if __name__ == "__main__":
