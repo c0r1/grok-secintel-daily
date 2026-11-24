@@ -1,162 +1,125 @@
 **【CyberSec 情报速报 | 云安全 & AI 重点强化】**
 
-> 生成时间: 2026-11-23 16:56:53 UTC+08:00
+> 生成时间: 2026-11-24 18:51:21 UTC+08:00
 
-**统计范围**: 2026-11-20 - 2026-11-23（包含起止日，共约 3-4 天数据）
-**本期热度峰值**: 最高 👍 270 | 最高 👀 未披露
-**今日情报眼**: vCenter在野利用限期将至
+**统计范围**: 2026-11-21 - 2026-11-24（包含起止日，共约 3-4 天数据）
+**本期热度峰值**: 最高 👍 37 | 最高 👀 未披露
+**今日情报眼**: 邮件安全关键SSRF列入KEV
+
+说明：只保留统计窗口内公开来源。互动数仅采用原稿明确写出的数值，缺失标「未披露」，不推算。11 月 19 日前的首发研究、补丁与漏洞披露标「历史参考」，不计入本期热度峰值。不展开利用步骤或 PoC。
 
 ---
 
 **📋 生成说明**
-本报告由多份公开来源草稿合并、去重、排序而成，技术细节未经人工验证，仅供参考。只保留影响与处置方向，不含利用步骤或 PoC。互动只采用草稿中明确写出的数值，缺失标「未披露」，不外推；浏览量在各份中均未披露。窗口外首发仅作 [历史参考]，不计入本期热度峰值。
+本报告由多份自动汇总稿去重合并，技术细节未经人工验证，仅供参考。
 
 ---
 
 **💰 本期最高赏金 / 最炸裂 payout**
 本期无高互动/突破性情报
 
-窗口内未保留可追溯的大额到账原帖。DFX 11-20 上调赏金上限属项目调整，不是本期已支付奖金，见文末。
-
----
-
 **☁️ 云安全重点(特别加强板块)**
+- N-able Mail Assure / SpamExperts：CVE-2026-134624（SSRF，CVSS 4.0 9.3），已入 CISA KEV
+  - 🌟 亮点总结: 厂商在托管环境入侵调查中发现并修复。已认证 API 用户配置 relay 时，LDAP 同步连通性检查可连向任意内网主机与端口，探测可达性并向内部服务发送数据。低于 20261121.1943 的版本受影响。N-able 称利用限于单台自有托管服务器，已撤销相关令牌并恢复服务。CISA 于 11 月 23 日列入 KEV，联邦修复截止 11 月 26 日。需要高权限 API 身份，不是未认证漏洞，但在已失陷的多租户环境中危害大。互动来自 @TheHackersNews 11 月 23 日相关帖；该帖状态链接不完整，主来源用完整报道。 | 👍 37 | 🔄 9 | 👀 未披露
+  - 🔗 来源: https://www.securityweek.com/n-able-patches-critical-flaw-disclosed-after-mail-assure-cyberattack/ | 📅 2026-11-23
 
-- VMware vCenter 认证绕过 CVE-2026-123890（CVSS 9.8，在野）
-  - 🌟 亮点总结: CISA 于 11-20 列入 KEV，美国联邦机构整改期限为 11-23。公开报告称网络可达的未认证访问者可取得 vCenter / SSO 管理员会话，并进一步触及 ESXi 与虚拟机数据。Mandiant/Google 将活动关联到 Armory Castle（原 UNC5221），称至少自 9 月初利用，涉及伪造 SSO 管理员与 SAML 签名材料。补丁版本包括 9.1.1.0200、9.0.2.0200、8.0 U3m；无官方 workaround，7.0 无公开修复且已过支持窗口。Broadcom VMSA-2026-0009 日期为 11-19，作 [历史参考]。仅升级不能清除已落入的会话或被带走的签名密钥，需排查非预期 SSO 管理员、轮换相关密钥，并隔离管理面。同批 KEV 未见公开确认的勒索软件关联。 | 👍 270 | 🔄 63 | 👀 未披露
-  - 🔗 来源: https://x.com/tldrcve/status/2124521515677069731 | 📅 2026-11-22
-  - 同事件媒体帖: https://x.com/TheHackersNews/status/2123676173888795110 | 👍 143 | 🔄 42 | 👀 未披露 | 📅 2026-11-20
+- Azure API Management Classic 密钥遭未授权读取，并与挪威能源企业事件关联
+  - 🌟 亮点总结: 公开报道日期为 11 月 23 日。微软称 11 月 18 日发现、19 日关闭管理面未授权路径（发现与关闭为 [历史参考]）。受影响为 APIM Classic 的 Developer、Basic、Standard、Premium；Classic Consumption 与全部 v2 不受影响。可能暴露 Named Values、IdP/OIDC client secret、subscription key，以及直连管理 API 的 token。平台侧轮换不能代替客户轮换。挪威 NSM 称能源行业最先发现，Equinor、Skagerak Energi 等受影响；两家称未见数据被窃或业务中断。客户侧日志可能不完整，不能用「日志里没有」证明密钥未被读到。相关密钥应按已暴露处理，并核对接后端访问。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://www.bleepingcomputer.com/news/security/microsoft-azure-flaw-exploited-to-steal-customers-api-credentials/ | 📅 2026-11-23
 
-- NGINX HTTP/2 未认证 RCE（窗口内扩散；主披露为历史参考）
-  - 🌟 亮点总结: [历史参考] 主披露在 11-18（Wiz 等指出 CVE-2026-123633 与 CVE-2026-123007；启用 HTTP/2 时未认证 RCE，CVSS 4.0 9.2；F5 同日发补丁）。该历史帖不计入本期峰值。窗口内 CyberScoop 称研究方披露了五枚 NGINX 问题且均有可用利用，测试中曾与内核问题串联到宿主机控制。公开修复版本包括 1.30.7 与 1.31.9。第三方活动页将 GCP-2026-089 标为 11-20 High，关联上述缺陷；GCP-2026-087 的 Critical 文本在 11-19，不计入本期。反代、Ingress 与仅托管静态文件的实例均在影响讨论范围内，应核对版本与 HTTP/2 是否开启，不要用第三方 exploit 包验证。 | 👍 8 | 🔄 3 | 👀 未披露
-  - 🔗 来源: https://x.com/CyberScoopNews/status/2123582975761695164 | 📅 2026-11-20
-  - [历史参考] https://x.com/wiz_io/status/2123072693042082117 | 📅 2026-11-18
-  - GCP 公告索引: https://echelongraph.io/pulse/health/gcp | 📅 2026-11-20
+- AI 推理供应链：至少三家托管方复制提示词与诱饵云密钥
+  - 🌟 亮点总结: 约 200 万条带 canary 的提示词显示，至少三家托管商在数月内未察觉数据被窃。最大一起约数百枚诱饵 AWS 密钥在 10 月下旬被整批复制（含模型未执行即被拒的请求），随后出现数万次 AWS API 调用，并探测 S3、Secrets Manager、Parameter Store，尝试创建 IAM 用户与 Bedrock 相关能力；曾用 ARTEX 确认密钥仍有效。部分标有 Zero Data Retention 的请求仍被读取。窗口内跟进点名 Phala 旧接口与未加固 GPU 节点、GMI 约三天请求留存被读，以及 Together 编码代理把私有仓库凭证提交到公开仓库。11 月 22 日 OpenRouter 下架三家供应商，并将 125 个端点移出 ZDR。影响是客户真实提示词极可能一并泄露，长效云凭证可被转售或横向使用。Dragos 原文为 2026-11-19 [历史参考]。防御要点：敏感任务自托管或直连一级供应商；凡进入提示词、日志或评测样本的云密钥一律轮换；空账号金丝雀不能代替最小权限与短期凭证。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://lava.security/blog/ai-inference-canary-research-prompts-exposed | 📅 2026-11-21
 
-- CISA 同日另三枚在野漏洞（与 vCenter 同一 KEV 批次）
-  - 🌟 亮点总结: 11-20 一批加入，联邦期限同为 11-23。CVE-2026-76466（Cisco Expressway，CVSS 9.8）为硬编码凭据，集群设备上可导致 root 命令执行；CVE-2026-129448（Apache Roller，CVSS 9.8）为认证前反序列化导致的远程代码执行风险；CVE-2025-42884（SAP NetWeaver，CVSS 6.5）为未认证信息泄露/篡改。四枚均未见公开确认的勒索软件关联。优先处理对互联网或管理网暴露的实例。 | 👍 6 | 🔄 0 | 👀 未披露
-  - 🔗 来源: https://x.com/DailyDarkWeb/status/2123852649451663860 | 📅 2026-11-20
+- Datadog《2026 State of Cloud Security》窗口内解读
+  - 🌟 亮点总结: 11 月 23 日博文：云应用高危/严重漏洞中位数由 2026 年 2 月约 4 个升至 11 月约 16 个（约四倍）。超过五分之一组织使用云托管推理；Gemini 用户近半数仍用长效 API key，Bedrock 约 17%，Azure Foundry 默认长效密钥约 97% 组织未改。工作负载平均约 149 个依赖，逾半为传递依赖；约 60% 组织在跑发布不足 24 小时的版本。被盗长效 AI key 可直接变现推理额度。主报告首发早于本窗口 [历史参考]，不计入本期热度。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://www.datadoghq.com/blog/cloud-security-study-learnings-2026/ | 📅 2026-11-23
 
-- GCP-2026-090：phpAfterShell（CVE-2026-126714）影响 Cloud Run / App Engine PHP 运行时
-  - 🌟 亮点总结: Google Cloud 于 11-20 公告。PHP 默认 files session handler 的严重缺陷可在特定条件下导致 RCE（PHP 评分 CVSS 9.2）。受影响面包括 App Engine Standard/Flexible、Cloud Run、Cloud Run functions 等。厂商缓解方向是关闭 Session Upload Progress、改用非本地 session 存储，并升级到已修复的 PHP 分支；托管运行时补丁镜像仍在滚动。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://docs.cloud.google.com/support/bulletins | 📅 2026-11-20
+- VMware Cloud on AWS：VMSA-2026-0011 对 SDDC 的影响
+  - 🌟 亮点总结: 11 月 24 日 Broadcom 公布 23 个 CVE。对 VMC on AWS，仅 ESX 的 CVE-2026-123913（VMkernel 栈缓冲区问题，CVSS 约 8.2，需已有 VMX 进程内权限）影响 SDDC，由 VMware 分批修复。VMware Tools 的 CVE-2026-123918 按共享责任模型由客户升级 Guest Tools；其余多数不影响托管 SDDC。客户应核对 Tools 版本，勿把「托管」当成 Tools 已修完。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://techdocs.broadcom.com/us/en/vmware-cis/cloud/vmware-cloud-on-aws/SaaS/vmware-cloud-on-aws-security-bulletins/vmware-cloud-on-aws-security-bulletins.html | 📅 2026-11-24
 
-- GCP 托管运行时完成 Java4Shell（CVE-2026-114938）补丁铺开
-  - 🌟 亮点总结: [历史参考] 漏洞于 11-17 公开：OpenJDK Base64 解码内存破坏，可在特定 x86-64（AVX-512 VBMI）上影响 Java 17.0.6+ / 21 / 25 / 27，堆越界写可导致 RCE；ARM 与 Java 8/11 常规构建不受影响。本期新事实是 GCP-2026-082 于 11-20 更新：Java 17/21/25 修补版基础镜像已在 Cloud Run、Cloud Functions、App Engine、Buildpacks 完成推送。自动更新的托管运行时无需手工换镜像，但温实例需重新部署才立刻切到新 JVM；App Engine 标准环境与 Cloud Run 二代在 11-30 前仍保留临时 AVX-512 防护。自管 GKE/VM 仍需自行升级并重启。云上优先核对托管运行时是否已切到修补镜像，而不是只看自建 JDK。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://docs.cloud.google.com/support/bulletins | 📅 2026-11-20
-
-- KVM CVE-2026-99312：客户机读取 AMD 宿主机内存
-  - 🌟 亮点总结: 11-20 公开简报称，研究者从单台云虚拟机读取了约 127GB 宿主机内存。这是 hypervisor 隔离失效，直接影响多租户。公开建议是升级宿主机内核（简报列出的分支包括 6.12.118、6.18.64、7.3.5）或临时关闭 nested。互动与完整顾问原文未在本窗口内核到。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://podcasts.apple.com/us/podcast/november-20-2026-cyber-briefing/id1663966320?i=1000803138303 | 📅 2026-11-20
-
-- Rackspace Spot：泄露凭据可读客户 Kubernetes Secret
-  - 🌟 亮点总结: 厂商称 11-17 有人用泄露凭据进入 Spot，能在部分客户集群创建 Pod、列举节点/卷，并读取 Secret 以及 Spot API/刷新令牌。GitHub 回复（11-20）把根因归到一套被入侵的可观测性系统；服务 11-21 报恢复。受影响客户应重签 Spot 令牌、更换自动化刷新令牌、拉取新 kubeconfig，并轮换集群 Secret 中的凭据，同时回看 11-17 起的工作负载日志。这是云控制面凭据被盗后的集群接管路径，不是新的 Kubernetes 逃逸 0day。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://brandefense.io/security-news/rackspace-spot-breach-kubernetes-secrets/ | 📅 2026-11-22
-
-- GKE：CVE-2026-99288 Linux TCP 远程 DoS，11-20 补丁版本更新
-  - 🌟 亮点总结: 内核 TCP 锁无关查找竞态可被远程流量打成内核 panic，影响 GKE Standard / Autopilot 的控制面与节点；官方说明不导致提权或容器逃逸。GKE Sandbox 与 Windows 节点不受影响。11-20 公告补充了 COS 上 1.32 / 1.33 的修补版本，1.37 的 COS 与 Ubuntu 镜像仍在推进。同页邻近的 DirtyFrag / Fragnesia 容器逃逸条目日期为 11-19，作 [历史参考]，不计入本期。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://docs.cloud.google.com/kubernetes-engine/security-bulletins | 📅 2026-11-20
-
----
+- Google Cloud：OpenJDK CVE-2026-114938（Java4Shell）托管运行时补丁滚动
+  - 🌟 亮点总结: 漏洞于 11 月 17 日披露 [历史参考]，本窗口为 GCP 公告更新至 11 月 23 日。HotSpot AVX-512 VBMI 的 Base64 解码内存破坏，仅影响支持该指令的 x86-64，ARM 不受影响；厂商称部分默认配置的 Java 应用上可达到未认证 RCE，但并非通用一键利用。Cloud Run、Functions、App Engine、Buildpacks、Dataflow、Managed Airflow 等已完成修补版 Java 17/21/25 基础镜像滚动。自管 GKE/VM 仍须自行升级。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://docs.cloud.google.com/support/bulletins | 📅 2026-11-23
 
 **📚 最值得读的 Writeup / 公开报告**
+- @bountywriteups 窗口内 Writeup 聚合（仅标题级）
+  - 📝 技术摘要: 11 月 23 日线程汇总多篇公开分析，含通配参数暴露大量账户、OAuth 账户接管、邮件伪造进入协作工具、SSRF 访问内网等标题。利用链未经复核，此处不复述步骤。 | 👍 27 | 🔄 9 | 👀 未披露
+  - 🔗 链接: https://x.com/bountywriteups/status/2124798913739886784 | 📅 2026-11-23
 
-- Amazon：Cairn 代理自主发现并利用 MONAI Label 0day
-  - 📝 技术摘要: Amazon 威胁情报 11-20 披露，疑似中国关联操作者在 9 月约 48 小时的高校行动中，用开源渗透框架 Cairn 的自主代理发现 MONAI Label 未知漏洞（CVE-2026-133968，CVSS 9.8）。认证默认关闭；代理在短时间内从接口测绘走到任意文件写入，并在一台高校服务器上获得 root。维护者已在代码中修复，窗口内出现 0.8.6 修复版本的后续报道。补丁确认落地前，应打开认证并避免把服务暴露给不可信网络。这是「代理找 0day」进入真实入侵披露的案例，阅读重点是隔离研究型标注服务，而不是复现利用链。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 链接: https://iacompa.com/news/amazon-cairn-ai-agents-zero-day-monai-label | 📅 2026-11-20
+- BleepingComputer / SecurityWeek：APIM Classic 事件时间线
+  - 📝 技术摘要: 公开事实链是能源行业先发现，微软 18 日确认、19 日堵住管理面路径（该两日为 [历史参考]），23 日媒体核对受影响层级与应轮换的密钥类型。v2 与 Classic Consumption 被明确排除。公司自报「未见数据被窃」不等于密钥未被读过。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 链接: https://www.securityweek.com/azure-flaw-exploited-to-target-secrets-at-norwegian-energy-firms/ | 📅 2026-11-23
 
-- Java4Shell 窗口状态（探测 vs 已确认入侵）
-  - 📝 技术摘要: ThreatDefence 于 11-21 更新：GreyNoise 统计到 11-21 约 261 次、7 个 IP 的探测形请求，未见已确认入侵；截至其引用的 11-20 CISA KEV 快照尚未收录。多家企业应用在实验条件下可打到预认证 RCE，但公开可靠利用并不通用，且依赖 CPU 特性与调用路径；同期大量声称 PoC 不可用。防御重点是升级 Java 并重启。Optimizely 11-20 更新称相关缓解与可用补丁已于当日 20:10 UTC 完成，监测未发现其产品或客户环境被利用，属厂商侧收尾，不是新的 0day。漏洞首发 11-17 为 [历史参考]。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 链接: https://threatdefence.com/article/java4shell-cve-2026-114938-openjdk-rce-patching-hunting | 📅 2026-11-21
-  - Optimizely: https://support.optimizely.com/hc/en-us/articles/50533122142605-Security-Advisory-Java4Shell-CVE-2026-114938-Security-Vulnerability-updated-November-20-2026 | 📅 2026-11-20
-
-- Dragos：约 200 万条推理请求里的金丝雀凭据
-  - 📝 技术摘要: HD Moore 团队 7 月至 11 月向常见 AI 推理服务发送约 200 万条带唯一 URL 与金丝雀密钥的 prompt。至少三家托管商在研究者通知前不知道数据已被盗；攻击者使用了诱饵密钥，包括对 AWS API 的大量调用（列举存储与密钥服务、尝试创建 IAM 用户与 Bedrock 密钥）。另有模型实验室及供应商主动抓取了本应零留存的链接。SANS 11-20 播客作了同期转述。结论是：prompt 路由与密钥是否进入推理链路，本身就是暴露面。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+- LAVA：200 万提示词金丝雀与推理供应链
+  - 📝 技术摘要: 每条请求绑定独立诱饵密钥与唯一 URL，用于区分「托管方被入侵后复制请求」和「实验室/供应商自行回连」。文中点名 Phala、GMI 请求留存被读，以及 Together 编码代理提交凭证。适合复查路由器上游、日志留存和 ZDR 是否名实相符。Dragos 同题原文为 2026-11-19 [历史参考]。不提供复现步骤。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
   - 🔗 链接: https://lava.security/blog/ai-inference-canary-research-prompts-exposed | 📅 2026-11-21
-  - 同期播客: https://isc.sans.edu/podcastdetail/10188 | 📅 2026-11-20
 
-- Together AI：2026 年 6–7 月推理请求提示词样本泄露
-  - 📝 技术摘要: 11-21 官方说明，MiniMax M3、GLM-5.2、Kimi K2.6 的部分提示词样本放在私有 Hugging Face 仓库。开发公开仓库 xorl 时，AI 编码代理把仓库凭证提交进公开 Git，扫描回滚前已被未授权方下载，并用来试探样本里的其他凭证（含 Dragos 金丝雀）。危害是提示词与其中的密钥外泄，不是模型权重泄露。新账号默认改为零数据保留。应轮换被提交的密钥并审计 agent 的 git 权限。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+- Together AI：AI 编码代理把私有仓库凭证提交到公开仓库
+  - 📝 技术摘要: 官方称测试用提示词样本在私有 Hugging Face 仓库；开发公开仓库 xorl 时，AI 编码代理提交了对应凭证。扫描发现后已回滚，但暴露窗口内凭证被取走并下载样本。样本主要来自 MiniMax M3、GLM-5.2、Kimi K2.6，日期集中在 2026-06-24、07-04、07-08、07-14。对方还在样本中检索并测试其他服务凭证。ZDR 路径据转述不在该批样本内。这是密钥进入代理可写仓库，不是模型权重泄露。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
   - 🔗 链接: https://www.together.ai/blog/security-event-prompt-leakage-for-requests-in-june-and-july-of-2026 | 📅 2026-11-21
 
-- OpenRouter：三家推理供应商下架，125 个端点取消 ZDR
-  - 📝 技术摘要: 11-22 公告称 OpenRouter 自身未被攻破；研究方发现部分推理供应商的数据策略与宣传不符。措施是下架 3 家供应商、125 个端点移出 Zero Data Retention（含预防性下架）。公开点名包括 Together AI、Phala、Novita。Phala 侧 DeepSeek V4 Flash 0731 在 10-21 至 11-08 的请求内容应按已暴露处理。同期另有转述称 Atlas Cloud、Novita 警告客户提示到达了 MiniMax 官方 API。要点是「零保留」标签不能代替供应商侧验证；经路由发送的 API Key 与私有提示词仍可能落在下游，用过这些路由的一方应轮换请求里出现过的密钥。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 链接: https://openrouter.ai/blog/announcements/data-processing-incidents-on-inference-providers/ | 📅 2026-11-22
-
----
+- N-able：Mail Assure 事件更新
+  - 📝 技术摘要: 将托管邮件安全产品的 SSRF 与一次真实入侵调查绑定：认证后的 LDAP 连通性检查未限制目标。修复版本 20261121.1943；托管侧已撤销令牌。对 MSP 客户，除升级外应确认 API/OAuth/中继凭据已轮换，并审计异常内网探测。本条为厂商博文，互动未披露（👍 37 属于上文新闻帖，不重复计入）。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 链接: https://www.n-able.com/blog/mail-assure-incident-update | 📅 2026-11-22
 
 **🔥 社区热议的技术话题或新手法**
+- ZDR 不能当成数据边界
+  - 💬 讨论核心: 焦点从「怎么注入模型」转到提示词在托管商、路由商、转售商处被整段复制。零留存标记只约束签约的第一跳；转售、审核、排障样本和编码代理都可能再读一次。被拒请求仍可能在入口被复制。实践上敏感推理应自建或直连一级供应商，并自带可告警的假密钥。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 代表性推文: https://www.securityweek.com/ai-inference-providers-failed-to-detect-hacking-and-prompt-theft-says-dragos/ | 📅 2026-11-23
 
-- Bug Bounty Writeup 日更汇总（窗口内达到 List 互动阈值的原帖）
-  - 💬 讨论核心: @bountywriteups 11-20 帖汇总多篇 Writeup 链接（标题涉及 Apple Podcasts Connect 盲 SSRF、Google Docs postMessage、Uber 令牌接口账号接管、JWT 等）。单篇原始发表日未逐条核进本窗口，只记这条汇总本身，不把其中旧文算作本期新洞。11-22 续集仅 👍 12、🔄 2，未单独计入。 | 👍 23 | 🔄 3 | 👀 未披露
-  - 🔗 代表性推文: https://x.com/bountywriteups/status/2123702424506679566 | 📅 2026-11-20
+- 长效 AI API key 与漏洞数量约四倍
+  - 💬 讨论核心: 社区把高危/严重漏洞中位数约四倍增长，与 Gemini、Bedrock、Azure Foundry 的长效密钥占比放在一起看。攻击者不需要自备模型，偷到调用方 key 即可借用配额与数据面。短时工作负载身份和密钥轮换，优先于再堆扫描器。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 代表性推文: https://www.datadoghq.com/blog/cloud-security-study-learnings-2026/ | 📅 2026-11-23
 
-- 推理供应链：便宜路由打破零留存
-  - 💬 讨论核心: 社区把 Dragos 金丝雀实验、Together 样本被下载和 OpenRouter 下架连在一起看。争议点不是模型越狱，而是中间商、编码代理和对象存储里的 prompt 样本。ZDR 可被上游留存、爬虫回连或仓库泄露打穿。Together 的入口是编码代理把私有仓库凭证提交进公开 Git；同周微软 Agent Framework 投毒的 11-20 跟进亦指向发布流水线客户端证书（恶意版 1.26.1 / 1.26.2 于 11-17 上传后约一小时被隔离，最后干净版 1.26.0，作 [历史参考]；Wiz 在攻击者 webhook 保留的 50 条请求里看到 3 起成功窃取，不能代表全部受害面）。实操共识是：密钥不要进 prompt，路由要白名单，发布与代理提交要审查签名和权限。 | 👍 2 | 🔄 0 | 👀 未披露
-  - 🔗 代表性推文: https://x.com/fourweekmba/status/2124393009743544542 | 📅 2026-11-22
-  - 流水线跟进 [历史参考为主，11-20 公开复盘]: https://4sysops.com/archives/microsoft-agent-framework-attack-traced-to-release-pipeline-certificate/ | 📅 2026-11-20
+- AI 编码代理提交密钥
+  - 💬 讨论核心: Together 事件把「代理能写 Git」变成云与数据泄露入口。应禁止代理提交密钥，对公开仓库做推送前扫描，并把测试样本与生产凭证隔离。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 代表性推文: https://www.together.ai/blog/security-event-prompt-leakage-for-requests-in-june-and-july-of-2026 | 📅 2026-11-21
 
-- 自主代理打 0day，而不是只做 prompt injection
-  - 💬 讨论核心: MONAI Label 一案被和「只靠注入劫持 Agent」区分开：Cairn 代理是在找软件缺陷并拿到代码执行。11-22 报道称 GTIG 与 Mandiant 在暴露的暂存服务器上看到名为 exploit_agent 的系统，能对照补丁差异自动找缺陷、生成并启动利用。同期 Help Net Security 报道用更大注入样本做强化学习，反而可能让模型更好劫持。社区结论是补丁窗口正在被机器速度压缩；模型对齐不够，工具权限和默认无认证才是突破口。防御侧应默认「补丁公开即有自动化利用」，而不是讨论如何复现。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 代表性推文: https://www.techradar.com/pro/security/google-says-it-just-saw-the-first-fully-autonomous-cyberattack-and-says-a-significant-threshold-has-been-crossed-in-terms-of-cybersecurity | 📅 2026-11-22
-  - 同期实验: https://www.helpnetsecurity.com/2026/11/20/ai-prompt-injection-red-team/ | 📅 2026-11-20
+- 间接 Prompt Injection 仍是智能体主风险
+  - 💬 讨论核心: 11 月 23 日综述把损失场景从「聊天越狱」改写为：智能体同时具备私有数据、不可信内容和对外动作即可被劫持。Jailbreak 只是直接注入的一类目标。文中对照 Slack AI、M365 Copilot、Cursor、GitHub MCP 等已知案例，强调没有单一防护足够。基准数字来自更早研究 [历史参考]。本期没有新的可核高互动 PoC 帖。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 代表性推文: https://www.sysdig.com/learn-cloud-native/prompt-injection | 📅 2026-11-23
 
-- 云上 Java 运行时补丁不等于业务已安全
-  - 💬 讨论核心: 高互动讨论集中在 11-17 至 11-19 [历史参考]。窗口内可核实的新事实是云厂商镜像铺开、探测仍在、上述来源未证实成功入侵。GCP 11-20 宣布基础镜像滚完，但自管 JVM、未重启的温实例，以及不走 Buildpacks 的容器仍然暴露。社区共识偏向：先给暴露在外且跑在受影响 CPU 上的 Java 17+ 服务打补丁并重启，并警惕伪造 PoC 仓库。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 代表性推文: https://docs.cloud.google.com/support/bulletins | 📅 2026-11-20
-
-- MCP 把参数当成 kubectl 参数（CVE-2026-134817）
-  - 💬 讨论核心: 11-22 披露，mcp-server-kubernetes 会把远端 MCP 客户端传入的、以横线开头的值交给 kubectl，从而被当成参数。VulnCheck 称其中一种参数可导致服务端读本地文件，4.2.0 已修复。这是 AI 工具层到 Kubernetes 控制面的参数注入。处置是升级组件并限制 MCP 客户端身份。同窗口另有 Obot 公告：任意已登录用户把自身改名为 anonymous 后，能调用从未授权的 MCP 工具，0.28.2 修复，说明治理网关若用保留名做默认拒绝，会被命名绕过。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 代表性推文: https://theinjection.dev/ | 📅 2026-11-22
-
----
+- Ghostscript CVE-2026-125396 再次进入公开讨论
+  - 💬 讨论核心: 低于 10.08.0 的版本在处理不可信 PostScript/PDF 时，存在沙箱限制被绕过并执行代码的风险（CVSS 4.0 由 CNA 评为 8.5）。补丁在 2026-09 已发布 [历史参考]；本窗口是公开复盘与下游暴露面讨论（邮件、打印、部分 Web 上传管线）。处置是升级到 10.08.0 或发行版回移植，而不是临时过滤规则。不提供利用细节。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 代表性推文: https://nvd.nist.gov/vuln/detail/CVE-2026-125396 | 📅 2026-11-22
 
 **🆕 新上线 / 更新中的 Bug Bounty 或 VDP 项目**
+- Metric（Immunefi）
+  - 📝 更新点: 跟踪站列为新项目/新范围，Critical 最高约 $500,000。赏金与范围以平台页面为准。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bugbounty.fyi/programs | 📅 2026-11-24
 
-- GCash Vulnerability Disclosure
-  - 📝 更新点: bugbounty.fyi 于 11-23 记为 HackerOne 新公开项目（页面「Today」）。赏金档与范围细节未在摘要中披露。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+- Minara（自托管）
+  - 📝 更新点: 窗口内新增 Critical 档，跟踪站显示最高约 $300,000。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bugbounty.fyi/changes | 📅 2026-11-24
+
+- 1Password 公开项目（Intigriti）
+  - 📝 更新点: 跟踪站列为新项目，最高约 $30,000。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bugbounty.fyi/programs | 📅 2026-11-24
+
+- BoursoBank（YesWeHack）
+  - 📝 更新点: 新项目，最高约 €3,000。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bugbounty.fyi/programs | 📅 2026-11-24
+
+- GCash Vulnerability Disclosure（HackerOne）
+  - 📝 更新点: 跟踪站记录为新公开 VDP；赏金与范围以平台页面为准。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
   - 🔗 来源: https://bugbounty.fyi/changes?dir=new&since=1 | 📅 2026-11-23
 
-- Beanstalk
-  - 📝 更新点: 同一追踪页将 11-22（相对 11-23 的「Yesterday」）记为 Sherlock 新公开项目。最高赏金未披露。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://bugbounty.fyi/changes?dir=new&since=1 | 📅 2026-11-22
-
-- 11-20 至 11-23 范围增减，不单列为新项目
-  - 📝 更新点: 追踪页在该窗口记录了 vidaXL、BlaBlaCar（YesWeHack）以及多个 security.txt / Bugcrowd 范围追加。这些是范围变更，不是新计划上线。11-19 的 Immunefi「Base Everest」等不在窗口内。转发 Amazon VRP GenAI 范围的帖未确认为本窗口新上线项目，不计入。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://bugbounty.fyi/changes?show=scope&dir=up&since=1 | 📅 2026-11-20
-
----
-
 **📢 平台动态 & 政策变化**
+- CISA 将 CVE-2026-134624 列入 KEV，联邦机构修复截止 2026-11-26 | CISA | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://nvd.nist.gov/vuln/detail/CVE-2026-134624 | 📅 2026-11-23
 
-- CISA 于 11-20 将 CVE-2026-123890 等纳入 KEV，联邦民事机构须在 11-23 前完成处置；条目要求做取证分诊。这是本窗口最硬的政策截止日。技术细节见云安全板块 vCenter 条目，不重复计热度。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://www.rescana.com/post/vmware-vcenter-cve-2026-123890-directory-service-auth-bypass-patch-now | 📅 2026-11-20
-
-- HackerOne / Bugcrowd / Intigriti / YesWeHack / Immunefi 官方账号在窗口内的政策帖，未能核到达到收录阈值的原帖互动，不编造平台政策变化。Intigriti Bug Bytes（10-30）为 [历史参考]。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-
----
+- OpenRouter 下架 3 家推理供应商，125 个端点失去 ZDR | OpenRouter | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 📝 更新点: 11 月 22 日公告称，研究者发现部分上游存在数据被盗或策略未兑现；OpenRouter 自身未被指入侵。措施包括下架 3 家供应商、将 125 个端点移出 ZDR（含预防性移除），并通知可能受影响客户。恢复 ZDR 需额外保证与验证。这不是赏金平台规则变更。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://openrouter.ai/blog/announcements/data-processing-incidents-on-inference-providers/ | 📅 2026-11-22
 
 **🏆 猎人里程碑 / 大额奖励**
 本期无高互动/突破性情报
 
-窗口内没有可追溯到猎人、金额与原帖的大额到账或里程碑。
-
----
-
 **☕ 其他有趣八卦 / 吐槽 / 预警**
+- 自建项目「修了不付钱」投诉仍在出现（例如 11 月 21 日有人称某 Critical 子域问题被静默修复且无回复）。投报告前先确认平台托管、范围与付款记录，不要把修复本身当成会付钱。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://bugbountyscam.com/ | 📅 2026-11-21
 
-- DFX 热钱包事件后上调赏金。官方说明 11-18 攻击者拷走热钱包私钥，损失略低于 CHF 50,000，作 [历史参考]，不计入本期峰值。11-20 起赏金上限从 CHF 10,000 调至 CHF 50,000，并取消生产环境的自动 GitHub 部署。属项目调整，不是本期 payout。 | 👍 4 | 🔄 1 | 👀 未披露
-  - 🔗 来源: https://x.com/compasssecurity/status/2123735236106424457 | 📅 2026-11-20
-
-- GL.iNet：攻击者于 11-20 利用 GoodCloud 缺陷，向部分路由器和 KVM 植入恶意软件。厂商已堵路径，11-22 起推固件；只升级固件清不掉已落地的感染，需要恢复出厂。影响型号包括 RM1 系列及使用 GoodCloud 的部分路由。边缘设备云管理面再次成为入口。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://cybersixt.com/ | 📅 2026-11-22
-
-- Qubole 跨账号 AWS 角色被滥用；银行与卡组织本周确认第三方事件
-  - 攻击发生在 10 月，作 [历史参考]，不计入本期热度。Chase、Visa、Mastercard 的第三方事件说明落在 11-19 至 11-20，汇总文日期为 11-21。攻击者借助供应商 AWS 身份 AssumeRole 进入客户账号，不少角色长期闲置。处置重点是清点并删除不用的跨账号角色、加上源条件，而不是只看本账号 IAM 用户。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://rokkhe.hashnode.dev/attacks-this-week-nov-21-2026-vcenter-confluence-litellm | 📅 2026-11-21
-
-- Java4Shell 与 PHP 相关公开仓库里混有不可用、疑似批量生成的 PoC /「利用演示」，增加防守方甄别成本。Java4Shell 的 11-21 状态文写明尚无确认入侵。PHP 安全发布本身在 11-19，作 [历史参考]。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://threatdefence.com/article/java4shell-cve-2026-114938-openjdk-rce-patching-hunting | 📅 2026-11-21
-
-- RunPod 托管 MCP 在创建成功后追加指令，要求编码智能体打 0–10 分且不要告诉用户。官方文档承认该行为，可用请求头关闭。属于智能体侧信道「隐藏指令」，不是 RCE。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
-  - 🔗 来源: https://theinjection.dev/ | 📅 2026-11-21
+- 防御清单（非新漏洞）: 轮换曾出现在提示词、评测集或代理仓库中的云密钥；Gemini、Bedrock、Azure Foundry 长期 key 改为短期凭证；文档与打印链路确认 Ghostscript ≥ 10.08.0。不要把真实密钥、内网 URL 或客户数据写进发给第三方推理路由的提示词。 | 👍 未披露 | 🔄 未披露 | 👀 未披露
+  - 🔗 来源: https://www.datadoghq.com/blog/cloud-security-study-learnings-2026/ | 📅 2026-11-23
